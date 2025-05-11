@@ -14,7 +14,7 @@ export default function MenuItemCard({
   image,
 }: MenuItemCardProps) {
   return (
-    <div className="bg-white shadow-md max-w-sm w-full rounded-lg overflow-hidden flex-shrink-0 min-w-[250px]">
+    <div className="bg-white max-w-sm w-full rounded-lg overflow-hidden min-w-[250px]">
       <div className="relative w-full h-[200px]">
         <Image src={image} alt={title} fill className="object-cover" />
       </div>

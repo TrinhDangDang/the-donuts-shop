@@ -29,20 +29,22 @@ export default function Home() {
       <div className="w-full text-center px-6">
         <h2 className="text-4xl font-display mb-2 text-amber-700">Rewards</h2>
         <p className="text-lg text-gray-700">
-          Earn points with every purchase and unlock free treats!
+          Join the rewards to get points for every purchase toward{" "}
+          <span className="font-bold">free food and drinks</span>
         </p>
+        <div>new to the program? Join the rewards</div>
+        <div>already a member? Sign in now to get your points </div>
       </div>
 
       {/* $4 Breakfast Promo Section */}
-      <div className="w-full h-[500px] flex flex-col md:flex-row items-center justify-between px-6 gap-8">
+      <div className="w-full h-[500px] flex flex-col md:flex-row items-center px-6">
         {/* Text Side */}
-        <div className="md:w-1/2 text-left">
-          <h2 className="text-4xl font-display mb-4 text-amber-700">
+        <div className="md:w-1/2 text-center">
+          <h2 className="text-6xl font-[family-name:var(--font-open-sans) font-extrabold mb-4 text-amber-700">
             $4 Breakfast Deal
           </h2>
           <p className="text-lg text-gray-700">
-            A fresh start with coffee and a classic donut — all for just four
-            bucks!
+            A fresh start with coffee and a classic donut
           </p>
         </div>
 
