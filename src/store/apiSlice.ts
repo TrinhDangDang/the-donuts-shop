@@ -6,7 +6,7 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import { setCredentials } from "./authSlice";
-import type { MenuItem } from "@/types";
+import type { MenuItem, User } from "@/types";
 import type { RootState } from "./store";
 
 const baseQuery = fetchBaseQuery({
@@ -21,6 +21,7 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+// apiSlice.ts (update the reauth logic)
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
@@ -29,32 +30,32 @@ const baseQueryWithReauth: BaseQueryFn<
   let result = await baseQuery(args, api, extraOptions);
 
   if (result?.error?.status === 401) {
-    const refreshResult = await baseQuery(
-      { url: "/auth/refresh", method: "POST" },
-      api,
-      extraOptions
-    );
-
-    if (refreshResult?.data && (refreshResult.data as any).accessToken) {
-      api.dispatch(
-        setCredentials({ accessToken: (refreshResult.data as any).accessToken })
+    try {
+      const refreshResult = await baseQuery(
+        { url: "/auth/refresh", method: "POST" },
+        api,
+        extraOptions
       );
-      result = await baseQuery(args, api, extraOptions);
-    } else {
-      if (refreshResult?.error?.status === 403) {
-        (refreshResult.error.data as any).message = "Your login has expired.";
+
+      if (refreshResult?.data) {
+        const { accessToken } = refreshResult.data as { accessToken: string };
+        api.dispatch(setCredentials({ accessToken }));
+        // Retry the original request with new token
+        result = await baseQuery(args, api, extraOptions);
+      } else {
+        //api.dispatch(logOut());
       }
-      return refreshResult;
+    } catch (error) {
+      //api.dispatch(logOut());
     }
   }
 
   return result;
 };
-
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Menu"],
+  tagTypes: ["Menu", "User"], // Added User
   endpoints: (builder) => ({
     getMenu: builder.query<MenuItem[], void>({
       query: () => "/menu",
@@ -70,15 +71,27 @@ export const apiSlice = createApi({
     }),
     signIn: builder.mutation<
       { accessToken: string },
-      { email: string; pw: string }
+      { email: string; password: string; staySignedIn: boolean }
     >({
       query: (credentials) => ({
-        url: "/auth",
+        url: "/auth/signin",
         method: "POST",
         body: credentials,
+      }),
+    }),
+    createAccount: builder.mutation<User, Partial<User>>({
+      query: (newUser) => ({
+        url: "/user",
+        method: "POST",
+        body: newUser,
       }),
     }),
   }),
 });
 
-export const { useGetMenuQuery, useAddMenuItemMutation } = apiSlice;
+export const {
+  useGetMenuQuery,
+  useAddMenuItemMutation,
+  useSignInMutation,
+  useCreateAccountMutation,
+} = apiSlice;

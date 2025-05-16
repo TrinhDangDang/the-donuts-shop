@@ -5,3 +5,12 @@ export interface MenuItem {
   price: number;
   image: string;
 }
+
+export interface User {
+  _id: string;
+  userName: string;
+  email: string;
+  DoB?: Date;
+  password: string;
+  points: number;
+}

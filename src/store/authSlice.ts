@@ -1,8 +1,10 @@
+// authSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "./store"; // adjust path as needed
+import type { RootState } from "./store";
 
-interface AuthState {
+export interface AuthState {
   token: string | null;
+  _persist?: { version: number; rehydrated: boolean }; // Add this for TypeScript
 }
 
 const initialState: AuthState = {
@@ -18,6 +20,10 @@ const authSlice = createSlice({
     },
     logOut: (state) => {
       state.token = null;
+      // Optional: Clear persisted state on logout
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("persist:auth");
+      }
     },
   },
 });
@@ -25,5 +31,4 @@ const authSlice = createSlice({
 export const { setCredentials, logOut } = authSlice.actions;
 export default authSlice.reducer;
 
-// ✅ Typed selector
 export const selectCurrentToken = (state: RootState) => state.auth.token;

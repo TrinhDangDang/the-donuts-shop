@@ -6,11 +6,11 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 
 export async function POST(req: Request) {
-  const { email, pw } = await req.json();
+  const { email, password, staySignedIn } = await req.json();
   await dbConnect();
 
   const user = await User.findOne({ email });
-  const isValid = user && (await bcrypt.compare(pw, user.pw));
+  const isValid = user && (await bcrypt.compare(password, user.password));
 
   if (!isValid) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/api/auth/refresh",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: staySignedIn ? 60 * 60 * 24 * 7 : undefined,
   });
 
   return res;
