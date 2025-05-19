@@ -2,6 +2,7 @@ import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
 
     // Create the user with the hashed password
     const newUser = await User.create({
-      userName: body.userName,
+      name: body.userName,
       email: body.email,
       password: hashedPassword, // Store the hashed password
     });
@@ -40,6 +41,62 @@ export async function POST(req: Request) {
       { error: "Failed to create new user" },
       { status: 500 }
     );
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    // Get the token from the Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { message: "Unauthorized - No token provided" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    let decoded: { userId: string; userRole: string };
+
+    try {
+      decoded = jwt.verify(token, process.env.ACCESS_SECRET!) as {
+        userId: string;
+        userRole: string;
+      };
+    } catch (err) {
+      return NextResponse.json(
+        { message: "Token expired or invalid" },
+        { status: 401 }
+      );
+    }
+    // Find user without password
+    await dbConnect();
+    const user = await User.findById(decoded.userId).select("-password");
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    // Format the response
+    const response = {
+      name: user.name,
+      email: user.email,
+      DoB: user.DoB?.toISOString(), // Convert Date to string
+      points: user.rewardPoints,
+      role: user.role,
+      // Add other safe fields as needed
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return NextResponse.json(
+        { message: "Unauthorized - Invalid token" },
+        { status: 401 }
+      );
+    }
+    console.error("GET user error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 

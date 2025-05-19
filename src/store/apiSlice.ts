@@ -6,7 +6,13 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query";
 import { setCredentials } from "./authSlice";
-import type { MenuItem, User } from "@/types";
+import type {
+  MenuItem,
+  User,
+  Order,
+  PaymentIntentRequest,
+  PaymentIntentResponse,
+} from "@/types";
 import type { RootState } from "./store";
 
 const baseQuery = fetchBaseQuery({
@@ -55,7 +61,7 @@ const baseQueryWithReauth: BaseQueryFn<
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Menu", "User"], // Added User
+  tagTypes: ["Menu", "User", "Order"], // Added User
   endpoints: (builder) => ({
     getMenu: builder.query<MenuItem[], void>({
       query: () => "/menu",
@@ -86,6 +92,22 @@ export const apiSlice = createApi({
         body: newUser,
       }),
     }),
+    getCustomerInfo: builder.query<Partial<User>, void>({
+      query: () => "/user",
+    }),
+    getRecentOrders: builder.query<Order[], void>({
+      query: () => "/orders",
+    }),
+    getPaymentIntent: builder.mutation<
+      PaymentIntentResponse,
+      PaymentIntentRequest
+    >({
+      query: (body) => ({
+        url: "/create-payment-intent",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -94,4 +116,7 @@ export const {
   useAddMenuItemMutation,
   useSignInMutation,
   useCreateAccountMutation,
+  useGetCustomerInfoQuery,
+  useGetRecentOrdersQuery,
+  useGetPaymentIntentMutation,
 } = apiSlice;

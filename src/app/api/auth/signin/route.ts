@@ -17,12 +17,12 @@ export async function POST(req: Request) {
   }
 
   const accessToken = jwt.sign(
-    { userId: user._id },
+    { userId: user._id, userRole: user.role },
     process.env.ACCESS_SECRET!,
     { expiresIn: "15m" }
   );
   const refreshToken = jwt.sign(
-    { userId: user._id },
+    { userId: user._id, userRole: user.role },
     process.env.REFRESH_SECRET!,
     { expiresIn: "7d" }
   );

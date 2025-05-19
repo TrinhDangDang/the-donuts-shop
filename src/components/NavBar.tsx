@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useSelector } from "react-redux";
-import { selectCurrentToken } from "@/store/authSlice"; // adjust path as needed
+import { useDispatch, useSelector } from "react-redux";
+import { logOut, selectCurrentToken } from "@/store/authSlice"; // adjust path as needed
+import { useRouter } from "next/navigation";
 
 export default function TopAppBar() {
   const token = useSelector(selectCurrentToken); // Get auth state from Redux
-
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const handleLogout = () => {
+    dispatch(logOut());
+    router.push("/");
+  };
   return (
     <header className="flex items-center px-4 py-6 shadow-md bg-white">
       <div className="text-2xl text-amber-700 font-[family-name:var(--font-open-sans)]">
@@ -54,22 +60,27 @@ export default function TopAppBar() {
                   My Account
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link
                   href="/orders"
                   className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-amber-600 after:w-0 hover:after:w-full after:transition-all after:duration-300"
                 >
                   My Orders
                 </Link>
-              </li>
-              <li className="hover:text-amber-600 cursor-pointer">Cart</li>
+              </li> */}
               <li>
                 <Link
-                  href="/api/auth/signout"
+                  href="/cart"
                   className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-amber-600 after:w-0 hover:after:w-full after:transition-all after:duration-300"
                 >
-                  Logout
+                  Cart
                 </Link>
+              </li>
+              <li
+                onClick={handleLogout}
+                className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-amber-600 after:w-0 hover:after:w-full after:transition-all after:duration-300"
+              >
+                Logout
               </li>
             </>
           ) : (
