@@ -43,31 +43,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Authentication
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json(
-      { message: "Unauthorized - No token provided" },
-      { status: 401 }
-    );
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded: { userId: string; userRole: string };
-
   try {
     if (!process.env.ACCESS_SECRET) {
       throw new Error("ACCESS_SECRET is not defined");
     }
-    decoded = jwt.verify(token, process.env.ACCESS_SECRET) as {
-      userId: string;
-      userRole: string;
-    };
   } catch (err) {
-    return NextResponse.json(
-      { message: "Token expired or invalid" },
-      { status: 401 }
-    );
+    return NextResponse.json({ status: 401 });
   }
 
   try {
@@ -101,17 +82,14 @@ export async function POST(req: Request) {
         );
       }
 
-      // Check stock for non-made-to-order items
-      if (!menuItem.isMadeToOrder) {
-        if (menuItem.stock.quantity < item.quantity) {
-          return NextResponse.json(
-            { error: `Insufficient stock for ${menuItem.title}` },
-            { status: 400 }
-          );
-        }
+      if (menuItem.stock.quantity < item.quantity) {
+        return NextResponse.json(
+          { error: `Insufficient stock for ${menuItem.title}` },
+          { status: 400 }
+        );
       }
 
-      subtotal += item.quantity * menuItem.price; // Fixed: using price instead of _id
+      subtotal += item.quantity * menuItem.price;
     }
 
     const tax = subtotal * 0.0825; // 8.25% tax
@@ -132,7 +110,6 @@ export async function POST(req: Request) {
       automatic_payment_methods: { enabled: true },
       metadata: {
         ...body.metadata,
-        userId: decoded.userId,
       },
       receipt_email: body.email || undefined,
       shipping: body.shipping

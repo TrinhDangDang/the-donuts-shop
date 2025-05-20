@@ -102,7 +102,14 @@ export default function TopAppBar() {
                   Log in
                 </Link>
               </li>
-              <li className="hover:text-amber-600 cursor-pointer">Cart</li>
+              <li>
+                <Link
+                  href="/cart"
+                  className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-amber-600 after:w-0 hover:after:w-full after:transition-all after:duration-300"
+                >
+                  Cart
+                </Link>
+              </li>
             </>
           )}
         </ul>
