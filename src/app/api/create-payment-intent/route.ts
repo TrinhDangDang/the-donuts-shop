@@ -132,9 +132,7 @@ export async function POST(req: Request) {
             title: item.name,
           }))
         ),
-        status: "processing",
-        paymentStatus: "paid",
-        subtotal: subtotal.toString(),
+        subtotal: amount.toString(),
         userId: decoded ? decoded.userId : "guest",
         email: body.email || null,
         shippping: body.shipping

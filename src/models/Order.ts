@@ -5,7 +5,6 @@ interface IOrderMenuItem {
   menuItemId: mongoose.Types.ObjectId;
   quantity: number;
   priceAtOrder: number;
-  specialInstructions?: string;
 }
 
 // Define interface for Order document
