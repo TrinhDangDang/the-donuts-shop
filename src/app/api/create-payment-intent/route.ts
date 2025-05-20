@@ -43,12 +43,27 @@ export async function POST(req: Request) {
     );
   }
 
+  // Authentication
+  const authHeader = req.headers.get("Authorization");
+
+  const token = authHeader?.split(" ")[1];
+  let decoded: { userId: string; userRole: string } | null = null;
+
   try {
     if (!process.env.ACCESS_SECRET) {
       throw new Error("ACCESS_SECRET is not defined");
     }
+    if (token) {
+      decoded = jwt.verify(token, process.env.ACCESS_SECRET) as {
+        userId: string;
+        userRole: string;
+      };
+    }
   } catch (err) {
-    return NextResponse.json({ status: 401 });
+    return NextResponse.json(
+      { message: "Token expired or invalid" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -109,7 +124,31 @@ export async function POST(req: Request) {
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       metadata: {
-        ...body.metadata,
+        cartItems: JSON.stringify(
+          cartItems.map((item) => ({
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+            priceAtOrder: item.price,
+            title: item.name,
+          }))
+        ),
+        status: "processing",
+        paymentStatus: "paid",
+        subtotal: subtotal.toString(),
+        userId: decoded ? decoded.userId : "guest",
+        email: body.email || null,
+        shippping: body.shipping
+          ? JSON.stringify({
+              name: body.shipping.name,
+              address: {
+                line1: body.shipping.address.line1,
+                city: body.shipping.address.city || undefined,
+                state: body.shipping.address.state || undefined,
+                postal_code: body.shipping.address.postal_code || undefined,
+                country: body.shipping.address.country || undefined,
+              },
+            })
+          : null,
       },
       receipt_email: body.email || undefined,
       shipping: body.shipping

@@ -42,9 +42,6 @@ const OrderSchema: Schema = new mongoose.Schema(
           type: Number,
           required: true,
         },
-        specialInstructions: {
-          type: String,
-        },
       },
     ],
     status: {
