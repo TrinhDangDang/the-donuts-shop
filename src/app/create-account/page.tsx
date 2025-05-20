@@ -26,7 +26,7 @@ export default function NewAccountPage() {
     e.preventDefault();
     try {
       await createAccount({
-        userName: `${formData.firstName} ${formData.lastName}`,
+        name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
       }).unwrap();
