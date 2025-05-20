@@ -21,22 +21,30 @@ export async function POST(req: Request) {
       const paymentIntent = event.data.object;
       const metadata = paymentIntent.metadata;
       const cartItems = JSON.parse(metadata.cartItems);
-      const userId = metadata.userId;
+      const parsedUserId =
+        metadata.userId && metadata.userId !== "guest"
+          ? metadata.userId
+          : undefined;
       const subtotal = Number(metadata.subtotal);
+
       // Update your database
       await dbConnect();
-      const newOrder = await Order.create({
-        userId,
-        menuItems: cartItems.map((item: any) => ({
-          menuItemId: item.menuItemId,
-          quantity: item.quantity,
-          priceAtOrder: item.priceAtOrder,
-        })),
-        status: "pending",
-        paymentStatus: "paid",
-        totalAmount: subtotal,
-      });
-      console.log("✅ Order created:", newOrder._id);
+      try {
+        const newOrder = await Order.create({
+          parsedUserId,
+          menuItems: cartItems.map((item: any) => ({
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+            priceAtOrder: item.priceAtOrder,
+          })),
+          status: "pending",
+          paymentStatus: "paid",
+          totalAmount: subtotal,
+        });
+        console.log("✅ Order created:", newOrder);
+      } catch (err) {
+        console.error("❌ Order creation failed:", err);
+      }
     }
 
     return NextResponse.json({ received: true });
