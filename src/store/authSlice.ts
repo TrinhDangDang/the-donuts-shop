@@ -2,13 +2,34 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "./store";
 
+// Define JWT payload structure (adjust to match your backend)
+interface JwtPayload {
+  role?: string; // Optional to handle missing roles
+  exp?: number;
+  // Add other expected claims
+}
+
 export interface AuthState {
   token: string | null;
-  _persist?: { version: number; rehydrated: boolean }; // Add this for TypeScript
+  role: string | null;
+  _persist?: { version: number; rehydrated: boolean };
 }
 
 const initialState: AuthState = {
   token: null,
+  role: null,
+};
+
+// Safe JWT decoder (frontend-only, no verification)
+const decodeJwt = (token: string): JwtPayload | null => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(base64));
+  } catch (error) {
+    console.error("JWT decoding failed:", error);
+    return null;
+  }
 };
 
 const authSlice = createSlice({
@@ -16,11 +37,15 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action: PayloadAction<{ accessToken: string }>) => {
-      state.token = action.payload.accessToken;
+      const { accessToken } = action.payload;
+      state.token = accessToken;
+
+      const decoded = decodeJwt(accessToken);
+      state.role = decoded?.role || null; // Fallback to null if role missing
     },
     logOut: (state) => {
       state.token = null;
-      // Optional: Clear persisted state on logout
+      state.role = null;
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("persist:auth");
       }
@@ -29,6 +54,9 @@ const authSlice = createSlice({
 });
 
 export const { setCredentials, logOut } = authSlice.actions;
-export default authSlice.reducer;
 
+// Selectors
 export const selectCurrentToken = (state: RootState) => state.auth.token;
+export const selectCurrentRole = (state: RootState) => state.auth.role; // Add role selector
+
+export default authSlice.reducer;
