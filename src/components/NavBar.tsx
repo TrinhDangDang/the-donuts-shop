@@ -45,7 +45,9 @@ export default function TopAppBar() {
           label: role === "customer" ? "My Account" : "Orders",
           visible: true,
         },
-        { href: "/cart", label: "Cart", visible: true },
+        ...(role === "customer"
+          ? [{ href: "/cart", label: "Cart", visible: true }]
+          : []),
         {
           href: "#",
           label: "Logout",
