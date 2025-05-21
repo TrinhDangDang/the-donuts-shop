@@ -41,7 +41,7 @@ export default function TopAppBar() {
   const rightNavItems: NavItem[] = token
     ? [
         {
-          href: role === "customer" ? "/account" : "/orders",
+          href: role === "customer" ? "/account" : "/admin-orders",
           label: role === "customer" ? "My Account" : "Orders",
           visible: true,
         },
