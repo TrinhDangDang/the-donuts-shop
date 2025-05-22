@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
       process.env.REFRESH_SECRET!
     ) as any;
     const newAccessToken = jwt.sign(
-      { userId: decoded.userId },
+      { userId: decoded.userId, userRole: decoded.userRole },
+
       process.env.ACCESS_SECRET!,
       { expiresIn: "15m" }
     );

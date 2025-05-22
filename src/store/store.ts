@@ -10,7 +10,7 @@ import { apiSlice } from "./apiSlice";
 const authPersistConfig = {
   key: "auth",
   storage,
-  whitelist: ["token"],
+  whitelist: ["token", "role"],
 };
 
 const cartPersistConfig = {

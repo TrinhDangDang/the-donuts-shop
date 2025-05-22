@@ -39,9 +39,9 @@ const authSlice = createSlice({
     setCredentials: (state, action: PayloadAction<{ accessToken: string }>) => {
       const { accessToken } = action.payload;
       state.token = accessToken;
-      console.log("Access token:", accessToken);
+
       const decoded = decodeJwt(accessToken);
-      console.log("Decoded JWT:", decoded);
+
       state.role = decoded?.userRole || null; // Fallback to null if role missing
     },
     logOut: (state) => {

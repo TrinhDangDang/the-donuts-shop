@@ -9,11 +9,12 @@ import { Order } from "@/types";
 function AdminPage() {
   const role = useSelector(selectCurrentRole);
   const router = useRouter();
-
+  console.log("hello");
+  console.log(role);
   //Secure redirection if not admin
   useEffect(() => {
     if (role !== "admin") {
-      router.replace("/unauthorized");
+      console.log("user role", role);
     }
   }, [role, router]);
 
@@ -71,7 +72,7 @@ function OrderList() {
       {orders?.length ? (
         orders.map((order: Order) => {
           return (
-            <div>
+            <div key={order._id}>
               <h1>{order._id}</h1>
               <p>{order.totalAmount}</p>
               <p>{order.status}</p>
