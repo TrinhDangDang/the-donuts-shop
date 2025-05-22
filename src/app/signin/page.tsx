@@ -35,6 +35,8 @@ export default function SignIn() {
       }).unwrap();
 
       // Update Redux store with the token
+      console.log("Login response:", response);
+
       dispatch(setCredentials({ accessToken: response.accessToken }));
 
       // Redirect to home or previous page

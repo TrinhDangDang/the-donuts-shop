@@ -108,6 +108,9 @@ export const apiSlice = createApi({
         body,
       }),
     }),
+    getOrdersForAdmin: builder.query<Order[], void>({
+      query: () => "/admin",
+    }),
   }),
 });
 
@@ -119,4 +122,5 @@ export const {
   useGetCustomerInfoQuery,
   useGetRecentOrdersQuery,
   useGetPaymentIntentMutation,
+  useGetOrdersForAdminQuery,
 } = apiSlice;

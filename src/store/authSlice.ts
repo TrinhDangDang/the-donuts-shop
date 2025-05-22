@@ -4,7 +4,7 @@ import type { RootState } from "./store";
 
 // Define JWT payload structure (adjust to match your backend)
 interface JwtPayload {
-  role?: string; // Optional to handle missing roles
+  userRole?: string; // Optional to handle missing roles
   exp?: number;
   // Add other expected claims
 }
@@ -39,9 +39,10 @@ const authSlice = createSlice({
     setCredentials: (state, action: PayloadAction<{ accessToken: string }>) => {
       const { accessToken } = action.payload;
       state.token = accessToken;
-
+      console.log("Access token:", accessToken);
       const decoded = decodeJwt(accessToken);
-      state.role = decoded?.role || null; // Fallback to null if role missing
+      console.log("Decoded JWT:", decoded);
+      state.role = decoded?.userRole || null; // Fallback to null if role missing
     },
     logOut: (state) => {
       state.token = null;

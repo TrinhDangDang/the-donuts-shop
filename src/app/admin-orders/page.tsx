@@ -3,20 +3,28 @@ import { useSelector } from "react-redux";
 import { selectCurrentRole } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useGetOrdersForAdminQuery } from "@/store/apiSlice";
+import { Order } from "@/types";
 
 function AdminPage() {
   const role = useSelector(selectCurrentRole);
   const router = useRouter();
 
-  // Secure redirection if not admin
-  //   useEffect(() => {
-  //     if (role !== "admin") {
-  //       router.replace("/unauthorized");
-  //     }
-  //   }, [role, router]);
+  //Secure redirection if not admin
+  useEffect(() => {
+    if (role !== "admin") {
+      router.replace("/unauthorized");
+    }
+  }, [role, router]);
 
   if (role !== "admin") {
-    return null; // Or loading spinner
+    return (
+      <div>
+        nothing here
+        <h1>{role}</h1>
+        <h1>hello</h1>
+      </div>
+    ); // Or loading spinner
   }
 
   return (
@@ -57,7 +65,25 @@ export default AdminPage;
 
 // Mock components (replace with your actual implementations)
 function OrderList() {
-  return <div>Order list will appear here</div>;
+  const { data: orders, isLoading, error } = useGetOrdersForAdminQuery();
+  return (
+    <div>
+      {orders?.length ? (
+        orders.map((order: Order) => {
+          return (
+            <div>
+              <h1>{order._id}</h1>
+              <p>{order.totalAmount}</p>
+              <p>{order.status}</p>
+              <p>{order.paymentStatus}</p>
+            </div>
+          );
+        })
+      ) : (
+        <p>no orders</p>
+      )}
+    </div>
+  );
 }
 
 function CustomerTable() {
