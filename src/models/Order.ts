@@ -16,6 +16,9 @@ export interface IOrder extends Document {
   updatedAt: Date;
   totalAmount: number;
   paymentStatus: "pending" | "paid" | "refunded";
+  guestName: String;
+  guestEmail: String;
+  guestAddress: String;
 }
 
 const OrderSchema: Schema = new mongoose.Schema(
@@ -56,6 +59,14 @@ const OrderSchema: Schema = new mongoose.Schema(
       type: String,
       enum: ["pending", "paid", "refunded"],
       default: "pending",
+    },
+    guestName: {
+      type: String,
+      required: true,
+    },
+    guestEmail: {
+      type: String,
+      required: true,
     },
   },
   {

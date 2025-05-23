@@ -118,11 +118,6 @@ export default function AccountPage() {
                               {/* Menu item name would need to be fetched */}
                               Menu Item #{item.menuItemId.toString().slice(-6)}
                             </p>
-                            {item.specialInstructions && (
-                              <p className="text-sm text-gray-500">
-                                Note: {item.specialInstructions}
-                              </p>
-                            )}
                           </div>
                           <p>
                             ${(item.priceAtOrder * item.quantity).toFixed(2)}

@@ -9,12 +9,12 @@ import { Order } from "@/types";
 function AdminPage() {
   const role = useSelector(selectCurrentRole);
   const router = useRouter();
-  console.log("hello");
-  console.log(role);
+
   //Secure redirection if not admin
   useEffect(() => {
     if (role !== "admin") {
       console.log("user role", role);
+      router.push("/");
     }
   }, [role, router]);
 
@@ -67,13 +67,28 @@ export default AdminPage;
 // Mock components (replace with your actual implementations)
 function OrderList() {
   const { data: orders, isLoading, error } = useGetOrdersForAdminQuery();
+  console.log("ORDERS", orders);
   return (
     <div>
       {orders?.length ? (
         orders.map((order: Order) => {
           return (
-            <div key={order._id}>
-              <h1>{order._id}</h1>
+            <div
+              key={order._id}
+              className="mt-6 bg-white p-6 rounded-lg shadow"
+            >
+              {/* <div>{order.menuItems.map((menuItem)=> {return (<p>{menuItem.t}</p>)})}</div> */}
+
+              {order.menuItems.map((menuItem) => (
+                <div key={menuItem.menuItemId}>
+                  <ul>
+                    <li>{menuItem.itemName}</li>
+                    <li>{menuItem.priceAtOrder}</li>
+                    <li>{menuItem.quantity}</li>
+                  </ul>
+                </div>
+              ))}
+
               <p>{order.totalAmount}</p>
               <p>{order.status}</p>
               <p>{order.paymentStatus}</p>

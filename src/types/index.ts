@@ -27,9 +27,9 @@ import { Document, Types } from "mongoose";
 
 export interface OrderMenuItem {
   menuItemId: string;
+  itemName: string;
   quantity: number;
   priceAtOrder: number;
-  specialInstructions?: string;
 }
 
 export interface Order {

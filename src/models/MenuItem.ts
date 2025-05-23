@@ -1,5 +1,5 @@
 // models/MenuItem.ts
-import { Document, Schema, model, models } from "mongoose";
+import { Document, Schema, Types, model, models } from "mongoose";
 
 export interface MenuItemDocument extends Document {
   title: string;
