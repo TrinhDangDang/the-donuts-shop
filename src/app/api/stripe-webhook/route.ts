@@ -20,21 +20,25 @@ export async function POST(req: Request) {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
       const metadata = paymentIntent.metadata;
-      console.log(metadata);
       const cartItems = JSON.parse(metadata.cartItems);
-      const parsedUserId =
-        metadata.userId && metadata.userId !== "guest"
-          ? metadata.userId
-          : {
-              name: metadata.name,
-            };
+      const isGuest = !metadata.userId || metadata.userId === "guest";
+      const shipping = metadata.shipping ? JSON.parse(metadata.shipping) : null;
       const subtotal = Number(metadata.subtotal);
+      const address = Object.values(shipping.address).join(",");
 
       // Update your database
       await dbConnect();
       try {
         const newOrder = await Order.create({
-          userId: parsedUserId,
+          ...(isGuest
+            ? {
+                guestName: shipping.name,
+                guestEmail: metadata.email,
+                guestAddress: address,
+              }
+            : {
+                userId: metadata.userId,
+              }),
           menuItems: cartItems.map((item: any) => ({
             menuItemId: item.menuItemId,
             quantity: item.quantity,

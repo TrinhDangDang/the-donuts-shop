@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useGetPaymentIntentMutation } from "@/store/apiSlice";
 import { loadStripe } from "@stripe/stripe-js";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Elements,
   PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { selectCurrentCart } from "@/store/cartSlice";
+import { clearCart, selectCurrentCart } from "@/store/cartSlice";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
@@ -137,6 +137,7 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState("");
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +155,7 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
       setMessage(error.message || "Payment failed.");
     } else if (paymentIntent?.status === "succeeded") {
       setMessage("✅ Payment succeeded!");
+      dispatch(clearCart());
     }
   };
 

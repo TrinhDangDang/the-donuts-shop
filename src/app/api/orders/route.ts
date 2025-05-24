@@ -34,7 +34,8 @@ export async function GET(req: Request) {
     await dbConnect();
     const orders = await Order.find({ userId: decoded.userId })
       .sort({ createdAt: -1 })
-      .limit(5);
+      .limit(5)
+      .populate("menuItems.menuItemId");
 
     return NextResponse.json(orders, { status: 200 });
   } catch (error: any) {

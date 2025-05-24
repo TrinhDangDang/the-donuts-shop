@@ -62,11 +62,19 @@ const OrderSchema: Schema = new mongoose.Schema(
     },
     guestName: {
       type: String,
-      required: true,
+      required(this: any) {
+        return !this.userId;
+      },
     },
     guestEmail: {
       type: String,
-      required: true,
+      required(this: any) {
+        return !this.userId;
+      },
+    },
+    guestAddress: {
+      type: String,
+      required: false,
     },
   },
   {

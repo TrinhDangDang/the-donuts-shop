@@ -19,6 +19,7 @@ export default function AccountPage() {
     isLoading: isOrdersLoading,
     error: ordersError,
   } = useGetRecentOrdersQuery();
+  console.log(orders);
 
   // Combined loading state
   const isLoading = isCustomerLoading || isOrdersLoading;
@@ -114,9 +115,7 @@ export default function AccountPage() {
                         <li key={index} className="flex justify-between">
                           <div>
                             <p className="font-medium">
-                              {item.quantity} ×{" "}
-                              {/* Menu item name would need to be fetched */}
-                              Menu Item #{item.menuItemId.toString().slice(-6)}
+                              {item.quantity} × {item.menuItemId.title}
                             </p>
                           </div>
                           <p>
@@ -136,7 +135,7 @@ export default function AccountPage() {
                       </p>
                     </div>
                     <p className="text-lg font-bold">
-                      Total: ${order.totalAmount.toFixed(2)}
+                      Total: ${(order.totalAmount / 100).toFixed(2)}
                     </p>
                   </div>
                 </div>

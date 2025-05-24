@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
@@ -9,10 +9,12 @@ export default function SuccessPage() {
 
   const paymentIntentId = searchParams.get("payment_intent");
   const redirectStatus = searchParams.get("redirect_status");
+  const router = useRouter();
 
   useEffect(() => {
     if (redirectStatus === "succeeded") {
       setMessage("✅ Payment successful! Thank you for your order.");
+      router.push("/menu");
     } else if (redirectStatus === "failed") {
       setMessage("❌ Payment failed. Please try again.");
     } else if (paymentIntentId) {

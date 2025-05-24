@@ -135,7 +135,7 @@ export async function POST(req: Request) {
         subtotal: amount.toString(),
         userId: decoded ? decoded.userId : "guest",
         email: body.email || null,
-        shippping: body.shipping
+        shipping: body.shipping
           ? JSON.stringify({
               name: body.shipping.name,
               address: {

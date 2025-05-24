@@ -23,11 +23,8 @@ export interface User {
   role: string;
 }
 
-import { Document, Types } from "mongoose";
-
 export interface OrderMenuItem {
-  menuItemId: string;
-  itemName: string;
+  menuItemId: MenuItem;
   quantity: number;
   priceAtOrder: number;
 }

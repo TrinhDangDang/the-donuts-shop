@@ -80,9 +80,9 @@ function OrderList() {
               {/* <div>{order.menuItems.map((menuItem)=> {return (<p>{menuItem.t}</p>)})}</div> */}
 
               {order.menuItems.map((menuItem) => (
-                <div key={menuItem.menuItemId}>
+                <div key={menuItem.menuItemId._id}>
                   <ul>
-                    <li>{menuItem.itemName}</li>
+                    <li>{menuItem.menuItemId.title}</li>
                     <li>{menuItem.priceAtOrder}</li>
                     <li>{menuItem.quantity}</li>
                   </ul>
