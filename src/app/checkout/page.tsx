@@ -155,7 +155,6 @@ function CheckoutForm({ totalAmount }: { totalAmount: number }) {
       setMessage(error.message || "Payment failed.");
     } else if (paymentIntent?.status === "succeeded") {
       setMessage("✅ Payment succeeded!");
-      dispatch(clearCart());
     }
   };
 

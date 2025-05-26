@@ -31,13 +31,16 @@ export interface OrderMenuItem {
 
 export interface Order {
   _id: string;
-  userId: string;
+  userId: User;
   menuItems: OrderMenuItem[];
   status: "pending" | "processing" | "completed" | "cancelled";
   totalAmount: number;
   paymentStatus: "pending" | "paid" | "refunded";
   createdAt: string;
   updatedAt: string;
+  guestName: string;
+  guestEmail: string;
+  guestAddress: string;
 }
 
 // types/index.ts

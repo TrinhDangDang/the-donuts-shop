@@ -14,47 +14,6 @@ export default function MenuPage() {
     refetch,
   } = useGetMenuQuery();
 
-  const [addMenuItem, { isLoading: mutationLoading, error: mutationError }] =
-    useAddMenuItemMutation();
-
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    price: "",
-    imageUrl: "",
-    stock: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const stockQuantity = parseFloat(form.stock);
-
-    try {
-      await addMenuItem({
-        title: form.title,
-        description: form.description,
-        price: parseFloat(form.price),
-        imageUrl: form.imageUrl,
-        stock: { quantity: stockQuantity, lowStockAlert: 5, autoDisable: true },
-      }).unwrap();
-
-      setForm({
-        title: "",
-        description: "",
-        price: "",
-        imageUrl: "",
-        stock: "",
-      });
-      refetch(); // optional: refresh menu list
-    } catch (err) {
-      console.error("Failed to add item:", err);
-    }
-  };
-
   const dispatch = useDispatch();
 
   const handleAddToCart = (item: {
@@ -90,56 +49,7 @@ export default function MenuPage() {
       />
 
       <h2 className="text-xl font-semibold mb-2">Current Menu</h2>
-      <h1 className="text-2xl font-bold mb-4">Add New Menu Item</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-        <input
-          name="title"
-          value={form.title}
-          onChange={handleChange}
-          placeholder="Title"
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder="Description"
-          className="w-full p-2 border rounded"
-        />
-        <input
-          name="price"
-          type="number"
-          value={form.price}
-          onChange={handleChange}
-          placeholder="Price"
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          name="imageUrl"
-          value={form.imageUrl}
-          onChange={handleChange}
-          placeholder="Image URL"
-          className="w-full p-2 border rounded"
-        />
-        <input
-          name="stock"
-          value={form.stock}
-          onChange={handleChange}
-          placeholder="stock quantity"
-          className="w-full p-2 border rounded"
-        />
-        <button
-          type="submit"
-          disabled={mutationLoading}
-          className="bg-amber-600 text-white px-4 py-2 rounded"
-        >
-          {mutationLoading ? "Adding..." : "Add Menu Item"}
-        </button>
-        {mutationError && <p className="text-red-500">Failed to add item.</p>}
-      </form>
       {queryLoading && <p>Loading menu...</p>}
       {queryError && <p className="text-red-500">Failed to load menu.</p>}
       {menuItems?.map((item) => (

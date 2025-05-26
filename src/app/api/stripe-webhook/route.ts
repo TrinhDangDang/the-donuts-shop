@@ -22,6 +22,8 @@ export async function POST(req: Request) {
       const metadata = paymentIntent.metadata;
       const cartItems = JSON.parse(metadata.cartItems);
       const isGuest = !metadata.userId || metadata.userId === "guest";
+      console.log(isGuest);
+      console.log(metadata.userId);
       const shipping = metadata.shipping ? JSON.parse(metadata.shipping) : null;
       const subtotal = Number(metadata.subtotal);
       const address = Object.values(shipping.address).join(",");

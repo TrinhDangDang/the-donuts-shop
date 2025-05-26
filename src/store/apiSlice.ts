@@ -14,6 +14,7 @@ import type {
   PaymentIntentResponse,
 } from "@/types";
 import type { RootState } from "./store";
+import { url } from "inspector";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
@@ -111,6 +112,17 @@ export const apiSlice = createApi({
     getOrdersForAdmin: builder.query<Order[], void>({
       query: () => "/admin",
     }),
+    updateOrderStatus: builder.mutation<
+      Order,
+      { orderId: string; updatedStatus: string }
+    >({
+      query: ({ orderId, updatedStatus }) => ({
+        url: "/admin",
+        method: "PATCH",
+        body: { orderId, updatedStatus },
+      }),
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 
@@ -123,4 +135,5 @@ export const {
   useGetRecentOrdersQuery,
   useGetPaymentIntentMutation,
   useGetOrdersForAdminQuery,
+  useUpdateOrderStatusMutation,
 } = apiSlice;

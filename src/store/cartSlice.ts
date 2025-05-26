@@ -39,6 +39,10 @@ const cartSlice = createSlice({
     },
     clearCart: (state) => {
       state.items = [];
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("persist:cart"); // Clear redux-persist's cart data
+        localStorage.removeItem("cart"); // Clear any manual cart backups (if they exist)
+      }
     },
   },
 });

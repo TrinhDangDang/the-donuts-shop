@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { clearCart } from "@/store/cartSlice";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
@@ -10,10 +12,12 @@ export default function SuccessPage() {
   const paymentIntentId = searchParams.get("payment_intent");
   const redirectStatus = searchParams.get("redirect_status");
   const router = useRouter();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (redirectStatus === "succeeded") {
       setMessage("✅ Payment successful! Thank you for your order.");
+      dispatch(clearCart());
       router.push("/menu");
     } else if (redirectStatus === "failed") {
       setMessage("❌ Payment failed. Please try again.");

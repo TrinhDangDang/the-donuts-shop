@@ -8,6 +8,7 @@ import {
   selectCurrentToken,
 } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
+import { clearCart } from "@/store/cartSlice";
 
 interface NavItem {
   href: string;
@@ -24,6 +25,7 @@ export default function TopAppBar() {
 
   const handleLogout = () => {
     dispatch(logOut());
+    dispatch(clearCart());
     router.push("/");
   };
 
@@ -42,7 +44,7 @@ export default function TopAppBar() {
     ? [
         {
           href: role === "customer" ? "/account" : "/admin-orders",
-          label: role === "customer" ? "My Account" : "Orders",
+          label: role === "customer" ? "My Account" : "Admin",
           visible: true,
         },
         ...(role === "customer"
