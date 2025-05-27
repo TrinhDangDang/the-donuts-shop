@@ -1,25 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import MenuItem from "@/models/MenuItem";
 import jwt from "jsonwebtoken";
 import cloudinary from "@/lib/cloudinary";
 
-export async function GET() {
-  try {
-    await dbConnect();
-    const items = await MenuItem.find();
-    return NextResponse.json(items);
-  } catch (error) {
-    console.error("DB error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch data" },
-      { status: 500 }
-    );
-  }
-}
-
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -42,6 +28,7 @@ export async function DELETE(
     if (decoded.userRole !== "admin") {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
+    console.log("PARAMS:", params);
 
     // 3. Get ID from URL params
     const { id } = params;

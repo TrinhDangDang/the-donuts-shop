@@ -3,11 +3,16 @@ import { useSelector } from "react-redux";
 import { selectCurrentRole } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { MenuItem } from "@/types";
+import { ToastContainer, toast } from "react-toastify";
 import {
+  useAddMenuItemMutation,
+  useDeleteMenuItemMutation,
+  useGetMenuQuery,
   useGetOrdersForAdminQuery,
+  useUpdateMenuItemMutation,
   useUpdateOrderStatusMutation,
 } from "@/store/apiSlice";
-import { Order } from "@/types";
 
 function AdminPage() {
   const role = useSelector(selectCurrentRole);
@@ -31,6 +36,18 @@ function AdminPage() {
 
   return (
     <div className="p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -215,93 +232,175 @@ function OrderList() {
   );
 }
 
-interface MenuItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  description: string;
-  isEditing?: boolean;
-}
-
 function Menu() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    {
-      id: 1,
-      name: "Margherita Pizza",
-      price: 12.99,
-      quantity: 10,
-      description: "Classic tomato and mozzarella",
-    },
-    {
-      id: 2,
-      name: "Pasta Carbonara",
-      price: 14.5,
-      quantity: 8,
-      description: "Creamy pasta with pancetta",
-    },
-  ]);
-
+  const [updateMenuItem] = useUpdateMenuItemMutation();
+  const [addMenuItem] = useAddMenuItemMutation();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentEditItem, setCurrentEditItem] = useState<MenuItem | null>(null);
+  const [mode, setMode] = useState("Edit");
+  const { data: menuItems, isLoading, error } = useGetMenuQuery();
+  const [deleteMenuItem, { isLoading: deleteLoading }] =
+    useDeleteMenuItemMutation();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const validateForm = () => {
+    // Check required text fields
+    if (!form.title.trim() || !form.description.trim()) {
+      return false;
+    }
+
+    // Check price is valid number > 0
+    if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
+      return false;
+    }
+
+    if (form.quantity && !form.isMadeToOrder) {
+      if (isNaN(parseFloat(form.quantity)) || parseFloat(form.quantity) < 0) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    console.log(form);
+    if (!validateForm()) {
+      alert("Please fill out all fields correctly");
+      return;
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("title", form.title);
+    formDataToSend.append("description", form.description);
+    formDataToSend.append("price", form.price);
+    formDataToSend.append("isMadeToOrder", form.isMadeToOrder.toString());
+    if (!form.isMadeToOrder && form.quantity) {
+      formDataToSend.append("quantity", form.quantity);
+    }
+
+    if (selectedFile) {
+      formDataToSend.append("image", selectedFile);
+    }
+
+    try {
+      await addMenuItem(formDataToSend).unwrap();
+      toast.success("Menu item added successfully!");
+      // Reset form
+      setForm({
+        title: "",
+        description: "",
+        price: "",
+        imageUrl: "",
+        quantity: "",
+        isMadeToOrder: false,
+      });
+      setSelectedFile(null);
+      closeDialog();
+    } catch (error) {
+      console.error("Failed to add item:", error);
+      alert("Failed to add menu item");
+    }
+  };
 
   // Open dialog with item to edit
   const openEditDialog = (item: MenuItem) => {
+    setMode("Edit");
     setCurrentEditItem(item);
     setIsDialogOpen(true);
   };
 
   const openAddNewItemDialog = () => {
+    setMode("Add");
     setIsDialogOpen(true);
   };
 
   // Close dialog
   const closeDialog = () => {
+    setSelectedFile(null);
     setIsDialogOpen(false);
     setCurrentEditItem(null);
   };
-
+  const handleDeleteItem = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) {
+      return;
+    }
+    try {
+      await deleteMenuItem(id).unwrap();
+      toast.success("Item deleted successfully"); // Using react-toastify or similar
+      // Or: setState for a success message
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete item. Please try again.");
+      // Or: setState for an error message
+    } finally {
+      setIsDialogOpen(false); // Always close dialog
+    }
+  };
   // Save edited item
   const saveEditedItem = () => {
-    if (!currentEditItem) return;
+    //PUT LOGIC TO SAVE THE UPDATED ITEM HERE
 
-    setMenuItems(
-      menuItems.map((item) =>
-        item.id === currentEditItem.id ? currentEditItem : item
-      )
-    );
     closeDialog();
   };
   // Handle input changes in dialog
   const handleDialogInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentEditItem) return;
-
     const { name, value } = e.target;
-    setCurrentEditItem({
-      ...currentEditItem,
-      [name]:
-        name === "name" || name === "description"
-          ? value
-          : parseFloat(value) || 0,
-    });
+    if (name === "quantity") {
+      setCurrentEditItem({
+        ...currentEditItem,
+        stock: {
+          ...currentEditItem.stock,
+          quantity: parseInt(value) || 0,
+        },
+      });
+    }
+    // Handle other fields
+    else {
+      setCurrentEditItem({
+        ...currentEditItem,
+        [name]:
+          name === "title" || name === "description"
+            ? value
+            : parseFloat(value) || 0,
+      });
+    }
   };
 
   //ADD NEW ITEM LOGIC
-  const [form, setForm] = useState({
+
+  interface MenuItemForm {
+    title: string;
+    description: string;
+    price: string;
+    imageUrl: string;
+    quantity?: string;
+    isMadeToOrder: boolean;
+  }
+  const [form, setForm] = useState<MenuItemForm>({
     title: "",
     description: "",
     price: "",
     imageUrl: "",
-    stock: "",
+    quantity: "",
+    isMadeToOrder: false,
   });
 
   const handleNewItemInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: value,
-    });
+    const { name, value, type, checked } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   return (
@@ -337,36 +436,46 @@ function Menu() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {menuItems.map((item) => (
-              <tr key={item.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {`$${item.price.toFixed(2)}`}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
-                <td className="px-6 py-4 whitespace-normal">
-                  {item.description}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button
-                    className="bg-yellow-500 px-3 py-1 rounded text-white hover:bg-yellow-400"
-                    onClick={() => {
-                      openEditDialog(item);
-                    }}
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {menuItems &&
+              menuItems.map((item) => (
+                <tr key={item._id}>
+                  <td className="px-6 py-4 whitespace-nowrap">{item.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {`$${item.price.toFixed(2)}`}
+                  </td>
+                  {item.isMadeToOrder ? (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      make to order
+                    </td>
+                  ) : (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.stock.quantity}
+                    </td>
+                  )}
+
+                  <td className="px-6 py-4 whitespace-normal">
+                    {item.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                    <button
+                      className="bg-yellow-500 px-3 py-1 rounded text-white hover:bg-yellow-400"
+                      onClick={() => {
+                        openEditDialog(item);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
         <Dialog
           isOpen={isDialogOpen}
           onClose={closeDialog}
-          title="Edit Menu Item"
+          title={mode == "Edit" ? "Edit Menu Item" : "Add Menu Item"}
         >
-          {currentEditItem ? (
+          {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -374,9 +483,16 @@ function Menu() {
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={currentEditItem.name}
-                  onChange={handleDialogInputChange}
+                  name="title"
+                  value={mode == "Edit" ? currentEditItem?.title : form.title}
+                  onChange={
+                    mode == "Edit"
+                      ? handleDialogInputChange
+                      : handleNewItemInputChange
+                  }
+                  placeholder={
+                    mode !== "Edit" ? "Enter item name..." : undefined
+                  }
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -388,27 +504,47 @@ function Menu() {
                 <input
                   type="number"
                   name="price"
-                  value={currentEditItem.price}
-                  onChange={handleDialogInputChange}
+                  value={mode == "Edit" ? currentEditItem?.price : form.price}
+                  placeholder={
+                    mode !== "Edit" ? "Enter item price..." : undefined
+                  }
+                  onChange={
+                    mode == "Edit"
+                      ? handleDialogInputChange
+                      : handleNewItemInputChange
+                  }
                   step="0.01"
                   min="0"
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={currentEditItem.quantity}
-                  onChange={handleDialogInputChange}
-                  min="0"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
+              {!form.isMadeToOrder && !currentEditItem?.isMadeToOrder && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    value={
+                      mode == "Edit"
+                        ? currentEditItem?.stock.quantity
+                        : form.quantity
+                    }
+                    placeholder={
+                      mode !== "Edit" ? "Enter item quantity..." : undefined
+                    }
+                    onChange={
+                      mode == "Edit"
+                        ? handleDialogInputChange
+                        : handleNewItemInputChange
+                    }
+                    disabled={form.isMadeToOrder}
+                    min="0"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -417,8 +553,19 @@ function Menu() {
                 <input
                   type="text"
                   name="description"
-                  value={currentEditItem.description}
-                  onChange={handleDialogInputChange}
+                  value={
+                    mode == "Edit"
+                      ? currentEditItem?.description
+                      : form.description
+                  }
+                  placeholder={
+                    mode !== "Edit" ? "Enter item description..." : undefined
+                  }
+                  onChange={
+                    mode == "Edit"
+                      ? handleDialogInputChange
+                      : handleNewItemInputChange
+                  }
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -426,118 +573,82 @@ function Menu() {
                 <label className="block text-sm font-medium text-gray-700">
                   Image
                 </label>
+                {mode == "Edit" ? (
+                  <img
+                    src={currentEditItem?.imageUrl}
+                    alt="Placeholder image"
+                    className="w-64 h-auto"
+                  />
+                ) : null}
                 <input
-                  type="text"
-                  name="description"
-                  value={currentEditItem.description}
-                  onChange={handleDialogInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={
+                    mode == "Edit" ? handleDialogInputChange : handleFileChange
+                  }
+                  className="block w-full text-sm text-gray-500
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-md file:border-0
+      file:text-sm file:font-semibold
+      file:bg-indigo-50 file:text-indigo-700
+      hover:file:bg-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Made To Order
+                </label>
+                <input
+                  type="checkbox"
+                  name="isMadeToOrder"
+                  checked={currentEditItem?.isMadeToOrder}
+                  onChange={
+                    mode == "Edit"
+                      ? handleDialogInputChange
+                      : handleNewItemInputChange
+                  }
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  onClick={closeDialog}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveEditedItem}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={saveEditedItem}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-500 hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
+              {mode == "Edit" ? (
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={closeDialog}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveEditedItem}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={() => handleDeleteItem(currentEditItem!._id)}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={closeDialog}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-600"
+                  >
+                    Add Menu Item
+                  </button>
+                </div>
+              )}
             </div>
-          ) : (
-            <div>
-              Add New Item
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Title
-                </label>
-                <input
-                  name="title"
-                  placeholder="title"
-                  value={form.title}
-                  onChange={handleNewItemInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  description
-                </label>
-                <input
-                  placeholder="description"
-                  type="text"
-                  name="description"
-                  value={form.description}
-                  onChange={handleNewItemInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  price
-                </label>
-                <input
-                  placeholder="price"
-                  type="number"
-                  name="price"
-                  value={form.price}
-                  onChange={handleNewItemInputChange}
-                  min="0"
-                  step="0.1"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  quantity
-                </label>
-                <input
-                  placeholder="quanity"
-                  type="number"
-                  name="quantity"
-                  value={form.stock}
-                  onChange={handleNewItemInputChange}
-                  min="0"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  imageUrl
-                </label>
-                <input
-                  placeholder="imageUrl"
-                  type="file"
-                  value={form.title}
-                  onChange={handleNewItemInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  onClick={closeDialog}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 "
-                >
-                  Cancel
-                </button>
-                <button className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 ">
-                  Save
-                </button>
-              </div>
-            </div>
-          )}
+          }
         </Dialog>
       </div>
     </section>
@@ -558,7 +669,7 @@ function Dialog({ isOpen, onClose, children, title }: DialogProps) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="p-4">
-          <h3 className="text-lg font-semibold">{title || "Edit Item"}</h3>
+          <h3 className="text-lg font-semibold">{title}</h3>
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"

@@ -68,9 +68,9 @@ export const apiSlice = createApi({
       query: () => "/menu",
       providesTags: ["Menu"],
     }),
-    addMenuItem: builder.mutation<MenuItem, Partial<MenuItem>>({
+    addMenuItem: builder.mutation<MenuItem, FormData>({
       query: (newItem) => ({
-        url: "/menu",
+        url: "/admin",
         method: "POST",
         body: newItem,
       }),
@@ -123,6 +123,19 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Order"],
     }),
+    deleteMenuItem: builder.mutation<MenuItem, string>({
+      query: (id) => ({
+        url: `/menu/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Menu"],
+    }),
+    updateMenuItem: builder.mutation<MenuItem, string>({
+      query: (id) => ({
+        url: `/menu/${id}`,
+        method: "PATCH",
+      }),
+    }),
   }),
 });
 
@@ -136,4 +149,6 @@ export const {
   useGetPaymentIntentMutation,
   useGetOrdersForAdminQuery,
   useUpdateOrderStatusMutation,
+  useDeleteMenuItemMutation,
+  useUpdateMenuItemMutation,
 } = apiSlice;
