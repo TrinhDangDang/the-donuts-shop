@@ -68,12 +68,10 @@ export async function POST(req: Request) {
           })
         );
 
-        await Promise.all(
-          await User.findByIdAndUpdate(
-            metadata.userId,
-            { $inc: { rewardPoints: +subtotal / 10 } },
-            { new: true }
-          )
+        await User.findByIdAndUpdate(
+          metadata.userId,
+          { $inc: { rewardPoints: +subtotal / 10 } },
+          { new: true }
         );
 
         console.log("✅ Order created:", newOrder);
