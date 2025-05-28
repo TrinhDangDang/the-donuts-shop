@@ -1,118 +1,98 @@
-# The Donut Shop Online Payment
+# The Donut Shop - Online Ordering System 🍩
 
-![Database Schema](assets/Untitled.png)
+![Database Schema](assets/database-schema.png)
 
-# Donut Shop - Next.js E-commerce Application
+A full-featured e-commerce platform for a donut shop built with Next.js, featuring online ordering, payment processing, and admin management.
 
-## Screenshots
+## Table of Contents
 
-Here are some screenshots of the application in action:
-
-### Home Page
-
-![Home Page](./assets/localhost*3000*(1.png)
-
-### Menu Page
-
-![Menu Page](./assets/localhost*3000*(2.png)
-
-### Shopping Cart
-
-![Shopping Cart](./assets/localhost*3000*(3.png)
-
-### Checkout Process
-
-![Checkout](./assets/localhost*3000*(4.png)
-
-### Admin Dashboard
-
-![Admin Dashboard](./assets/localhost*3000*(5.png)
-
-### Rewards Program
-
-![Rewards Program](./assets/localhost*3000*(6.png)
-
-### Store Locations
-
-![Store Locations](./assets/localhost_3000_png)
-
-### Account Creation
-
-![Account Creation](./assets/Untitled.png)
-
-Here is some more information about the project.
-
-# Donut Shop - Next.js E-commerce Application
-
-## Overview
-
-This is a full-stack e-commerce application for a donut shop built with Next.js, featuring:
-
-- User authentication (sign in, create account)
-- Menu browsing and cart functionality
-- Checkout process with Stripe integration
-- Admin dashboard for order and menu management
-- Rewards program
-- Store location information
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Technologies](#technologies)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Endpoints](#api-endpoints)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-### Customer Facing
+### Customer Features
 
-- **User Authentication**: Sign in and account creation
-- **Menu Browsing**: View available donut items
-- **Shopping Cart**: Add/remove items, view totals
-- **Checkout**: Secure payment processing with Stripe
-- **Order Success**: Payment confirmation page
-- **Rewards Program**: View and earn customer rewards
-- **Store Locations**: Find physical store locations
+- 🚀 User authentication (JWT-based)
+- 🍩 Interactive menu with categories
+- 🛒 Real-time shopping cart
+- 💳 Stripe payment integration
+- 🎯 Rewards program with points system
+- ✉️ Order confirmation emails
 
 ### Admin Features
 
-- **Order Management**: View and update order statuses
-- **Menu Management**: Add/edit/delete menu items
-- **Inventory Control**: Track stock levels
-- **Admin Dashboard**: Comprehensive overview of shop operations
+- 📊 Dashboard with sales analytics
+- 📦 Order management system
+- 🖥️ Menu item CRUD operations
+- 📝 Customer management
+- 🔔 Real-time order notifications
 
-## Technologies Used
+## Screenshots
 
-- **Frontend**:
+| Page      | Screenshot                                              |
+| --------- | ------------------------------------------------------- |
+| Home      | ![Home Page](./assets/ocalhost_3000_.png)               |
+| Menu      | ![Menu Page](<.assets/localhost_3000_(1).png>)          |
+| Admin     | ![Admin Dashboard](<.assets/localhost_3000_(4).png>)    |
+| Rewards   | ![Rewards Program](<.assets/localhost_3000_(2).png>)    |
+| Locations | ![Store Locations](./assets/ocalhost_3000_location.png) |
 
-  - Next.js (App Router)
-  - React
-  - TypeScript
-  - Tailwind CSS
-  - Redux Toolkit (State management)
-  - RTK Query (API calls)
+![Database Schema](assets/Untitled.png)
 
-- **Backend**:
+## Technologies
 
-  - Next.js API routes
-  - MongoDB (Database)
-  - Mongoose (ODM)
-  - Stripe (Payments)
-  - Nodemailer (Order Confirmation)
+### Frontend
 
-- **Other**:
-  - React Toastify (Notifications)
-  - Next Font Optimization
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + CSS Modules
+- **State Management**: Redux Toolkit + RTK Query
+- **UI Libraries**: HeadlessUI, React-Icons
+- **Form Handling**: React Hook Form
+- **Notifications**: React Toastify
+
+### Backend
+
+- **Runtime**: Node.js
+- **Database**: MongoDB (Mongoose ODM)
+- **Authentication**: JWT + Cookie-based sessions
+- **Payments**: Stripe API
+- **Email**: Nodemailer
+
+### DevOps
+
+- **Environment Variables**: Dotenv
+- **Linting**: ESLint + Prettier
+- **Build Tool**: Vercel
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- npm or yarn
-- MongoDB Atlas account or local MongoDB instance
-- Stripe account
+- Node.js v18+
+- MongoDB Atlas account or local MongoDB v6+
+- Stripe developer account
+- Cloudinary account (for image storage)
 
 ### Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/TrinhDangDang/the-donuts-shop
+   git clone https://github.com/yourusername/donut-shop.git
    cd donut-shop
+
    ```
 
 2. Install dependencies:
@@ -148,22 +128,48 @@ This is a full-stack e-commerce application for a donut shop built with Next.js,
 ## Project Structure
 
 ```
-donut-shop/
-├── app/                    # Next.js app router pages
-│   ├── admin/              # Admin dashboard
-│   ├── cart/               # Shopping cart page
-│   ├── checkout/           # Checkout process
-│   ├── location/           # Store locations
-│   ├── menu/               # Menu browsing
-│   ├── rewards/            # Rewards program
-│   ├── signin/             # Sign in page
-│   ├── create-account/     # Account creation
-│   └── success/            # Order success page
-├── components/             # Reusable components
-├── store/                  # Redux store configuration
-├── types/                  # TypeScript type definitions
-├── public/                 # Static files
-└── styles/                 # Global styles
+src/
+├── app/ # Next.js application pages and routes
+│ ├── account/ # User account page
+│ ├── admin-orders/ # Admin orders management page
+│ ├── api/ # API routes
+│ │ ├── admin/ # Admin-related API endpoints
+│ │ ├── auth/ # Authentication endpoints
+│ │ │ ├── refresh/ # Token refresh endpoint
+│ │ │ └── signin/ # Sign-in endpoint
+│ │ ├── create-payment-intent/ # Stripe payment intent creation
+│ │ ├── menu/ # Menu item API endpoints
+│ │ │ ├── [id]/ # Dynamic menu item endpoint
+│ │ ├── orders/ # Order-related endpoints
+│ │ ├── stripe-webhook/ # Stripe webhook handler
+│ │ └── user/ # User-related endpoints
+│ ├── cart/ # Shopping cart page
+│ ├── checkout/ # Checkout page
+│ ├── create-account/ # Account creation page
+│ ├── location/ # Location information page
+│ ├── menu/ # Menu display page
+│ ├── rewards/ # Rewards program page
+│ ├── signin/ # Sign-in page
+│ └── success/ # Order success page
+├── components/ # Reusable UI components
+│ ├── MenuItemCard.tsx # Menu item card component
+│ └── NavBar.tsx # Navigation bar component
+├── lib/ # Utility libraries
+│ ├── cloudinary.ts # Cloudinary integration
+│ ├── dbConnect.ts # Database connection utility
+│ └── emailUtil.ts # Email utility functions
+├── models/ # MongoDB data models
+│ ├── MenuItem.ts # Menu item model
+│ ├── Order.ts # Order model
+│ ├── Review.ts # Review model
+│ └── User.ts # User model
+├── store/ # Redux store configuration
+│ ├── apiSlice.ts # Base API slice for RTK Query
+│ ├── authSlice.ts # Authentication slice
+│ ├── cartSlice.ts # Shopping cart slice
+│ └── store.ts # Redux store setup
+└── types/ # TypeScript type definitions
+└── index.ts # Main type definitions file
 ```
 
 ## Available Scripts
