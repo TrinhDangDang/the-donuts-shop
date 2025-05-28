@@ -1,47 +1,63 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/dbConnect";
 import Order from "@/models/Order";
+import MenuItem from "@/models/MenuItem";
 
 export async function GET(req: Request) {
   try {
-    // Get the token from the Authorization header
+    // Authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { message: "Unauthorized - No token provided" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.ACCESS_SECRET!) as {
+      userId: string;
+      userRole: string;
+    };
 
-    // Verify the token
-    let decoded: { userId: string; userRole: string };
+    // Database connection with model verification
+    await dbConnect();
 
-    try {
-      decoded = jwt.verify(token, process.env.ACCESS_SECRET!) as {
-        userId: string;
-        userRole: string;
-      };
-    } catch (err) {
-      return NextResponse.json(
-        { message: "Token expired or invalid" },
-        { status: 401 }
-      );
+    // Debug: Check registered models
+    console.log("Registered models:", Object.keys(mongoose.models));
+
+    // Explicit model registration if needed
+    if (!mongoose.models.MenuItem) {
+      console.log("Registering MenuItem model");
+      require("@/models/MenuItem");
+    }
+    if (!mongoose.models.Order) {
+      console.log("Registering Order model");
+      require("@/models/Order");
     }
 
-    await dbConnect();
+    // Query with population
     const orders = await Order.find({ userId: decoded.userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("menuItems.menuItemId");
+      .populate({
+        path: "menuItems.menuItemId",
+        model: "MenuItem",
+        // Only get necessary fields
+      });
 
     return NextResponse.json(orders, { status: 200 });
   } catch (error: any) {
-    console.error("GET / orders error", error);
+    console.error("Order fetch error:", {
+      error: error.message,
+      stack: error.stack,
+      models: Object.keys(mongoose.models || {}),
+    });
+
     return NextResponse.json(
-      { message: "Server error", error: error.message },
+      {
+        message: "Server error",
+        error: error.message,
+      },
       { status: 500 }
     );
   }

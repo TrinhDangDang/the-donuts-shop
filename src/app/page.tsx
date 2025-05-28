@@ -18,7 +18,7 @@ export default function Home() {
           <p className="text-lg">Current Favorite. Limited Time Only.</p>
         </div>
         <Link
-          href="/order/matcha-donut"
+          href="/menu"
           className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white text-black font-bold px-6 py-3 rounded-full hover:bg-amber-50 transition"
         >
           Get Yours Now

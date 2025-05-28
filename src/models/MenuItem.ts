@@ -1,13 +1,7 @@
-// models/MenuItem.ts
-import { Document, Schema, Types, model, models } from "mongoose";
+import mongoose, { Document, Schema, Model } from "mongoose";
 
-// interface StockInfo {
-//   quantity: number;
-//   lowStockAlert: number;
-//   autoDisable: boolean;
-// }
-
-export interface MenuItemDocument extends Document {
+// 1. Define the interface
+export interface IMenuItem extends Document {
   title: string;
   description?: string;
   price: number;
@@ -15,52 +9,35 @@ export interface MenuItemDocument extends Document {
   publicId?: string;
   isMadeToOrder: boolean;
   inStock: boolean;
-  stock: number;
+  stock: number; // Changed to simple number based on your schema
 }
 
-const MenuItemSchema = new Schema<MenuItemDocument>({
-  title: { type: String, required: true },
-  description: String,
-  price: { type: Number, required: true },
-  imageUrl: String,
-  publicId: String,
-  isMadeToOrder: { type: Boolean, default: false },
-  inStock: { type: Boolean, default: true },
-  stock: { type: Number, default: 0 },
-});
+// 2. Define the schema
+const MenuItemSchema = new Schema<IMenuItem>(
+  {
+    title: { type: String, required: true },
+    description: { type: String },
+    price: { type: Number, required: true },
+    imageUrl: { type: String },
+    publicId: { type: String },
+    isMadeToOrder: { type: Boolean, default: false },
+    inStock: { type: Boolean, default: true },
+    stock: { type: Number, default: 0 },
+  },
+  {
+    timestamps: true, // Adds createdAt and updatedAt
+  }
+);
 
-// MenuItemSchema.pre("save", function (next) {
-//   const item = this as MenuItemDocument;
+// 3. Handle Next.js hot-reloads
+let MenuItem: Model<IMenuItem>;
 
-//   if (item.isMadeToOrder) {
-//     // Clear stock data for made-to-order items
-//     item.stock = null;
-//     item.inStock = true; // Made-to-order items are always "in stock"
-//   } else {
-//     // Initialize stock if it's null (when switching from made-to-order to regular)
-//     if (item.stock === null) {
-//       item.stock = {
-//         quantity: 0,
-//         lowStockAlert: 5,
-//         autoDisable: true,
-//       };
-//     }
+if (mongoose.models.MenuItem) {
+  // If model already exists, use it
+  MenuItem = mongoose.models.MenuItem as Model<IMenuItem>;
+} else {
+  // If not, create new model
+  MenuItem = mongoose.model<IMenuItem>("MenuItem", MenuItemSchema);
+}
 
-//     if (item.stock) {
-//       const { quantity, autoDisable } = item.stock;
-
-//       // If quantity is 0 and autoDisable is true, mark the item as out of stock
-//       if (quantity <= 0 && autoDisable) {
-//         item.inStock = false;
-//       } else if (quantity > 0) {
-//         // If quantity is greater than 0, mark the item as in stock
-//         item.inStock = true;
-//       }
-//     }
-//   }
-
-//   next();
-// });
-
-export default models.MenuItem ||
-  model<MenuItemDocument>("MenuItem", MenuItemSchema);
+export default MenuItem;

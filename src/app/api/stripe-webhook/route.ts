@@ -5,14 +5,25 @@ import Order from "@/models/Order";
 import User from "@/models/User";
 import Stripe from "stripe";
 import MenuItem from "@/models/MenuItem";
+import mongoose from "mongoose";
+import nodemailer from "nodemailer";
+import transporter from "@/lib/emailUtil";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
-  const sig = req.headers.get("stripe-signature")!;
+  const sig = req.headers.get("stripe-signature");
   const body = await req.text();
 
+  if (!sig) {
+    return NextResponse.json(
+      { error: "Missing stripe-signature header" },
+      { status: 400 }
+    );
+  }
+
   try {
+    // Verify webhook signature
     const event = stripe.webhooks.constructEvent(
       body,
       sig,
@@ -21,67 +32,125 @@ export async function POST(req: Request) {
 
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
-      const metadata = paymentIntent.metadata;
-      const cartItems = JSON.parse(metadata.cartItems);
-      const isGuest = !metadata.userId || metadata.userId === "guest";
-      console.log(isGuest);
-      console.log(metadata.userId);
-      const shipping = metadata.shipping ? JSON.parse(metadata.shipping) : null;
-      const subtotal = Number(metadata.subtotal);
-      const address = Object.values(shipping.address).join(",");
+      const { orderId } = paymentIntent.metadata;
 
-      // Update your database
+      if (!orderId) {
+        console.error("Missing orderId in metadata");
+        return NextResponse.json(
+          { error: "Missing orderId in metadata" },
+          { status: 400 }
+        );
+      }
+
       await dbConnect();
+
+      // Start a transaction for atomic updates
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
       try {
-        const newOrder = await Order.create({
-          ...(isGuest
-            ? {
-                guestName: shipping.name,
-                guestEmail: metadata.email,
-                guestAddress: address,
-              }
-            : {
-                userId: metadata.userId,
-              }),
-          menuItems: cartItems.map((item: any) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            priceAtOrder: item.priceAtOrder,
-          })),
-          status: "pending",
-          paymentStatus: "paid",
-          totalAmount: subtotal,
-        });
+        // 1. Update order status
+        const updatedOrder = await Order.findByIdAndUpdate(
+          orderId,
+          { paymentStatus: "paid", status: "processing" },
+          { new: true, session }
+        );
 
+        if (!updatedOrder) {
+          throw new Error(`Order ${orderId} not found`);
+        }
+        const emailContent = `
+        <h1>Order Confirmation</h1>
+        <p>Thank you for your order, ${
+          updatedOrder.guestName || "Valued Customer"
+        }!</p>
+        <p>Your order number is: ${orderId}</p>
+        <p>Order Summary:</p>
+        <ul>
+          ${updatedOrder.menuItems
+            .map(
+              (item: any) =>
+                `<li>${item.quantity} x ${item.title} - $${item.priceAtOrder}</li>`
+            )
+            .join("")}
+        </ul>
+        <p>Total Amount: $${updatedOrder.totalAmount / 100}</p>
+        <p>Your order is now being processed. You will receive an update once it ships.</p>
+        <p>If you have any questions, feel free to reach out to us.</p>
+        <p>Thank you for shopping with us!</p>
+      `;
+        let user = null;
+        if (updatedOrder.userId) {
+          user = await User.findById(updatedOrder.userId);
+        }
+
+        const email = updatedOrder.userId
+          ? user?.email
+          : updatedOrder.guestEmail;
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER, // Sender email address
+          to: email, // Customer's email address
+          subject: "Order Confirmation - " + orderId, // Email subject
+          html: emailContent, // HTML content of the email
+        };
+
+        // Send the email
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${email}`);
+
+        // 2. Update menu item stock levels
         await Promise.all(
-          cartItems.map(async (item: any) => {
-            const menuItem = await MenuItem.findById(item.menuItemId);
+          updatedOrder.menuItems.map(async (item: any) => {
+            const menuItem = await MenuItem.findById(item.menuItemId).session(
+              session
+            );
 
-            // Skip stock update for made-to-order items
             if (menuItem && !menuItem.isMadeToOrder) {
-              await MenuItem.findByIdAndUpdate(
-                item.menuItemId,
-                { $inc: { stock: -item.quantity } },
-                { new: true }
-              );
+              const newStock = menuItem.stock - item.quantity;
+              if (newStock < 0) {
+                console.warn(`Insufficient stock for item ${menuItem._id}`);
+                // Handle out-of-stock scenario (e.g., notify admin)
+              } else {
+                await MenuItem.findByIdAndUpdate(
+                  item.menuItemId,
+                  { $inc: { stock: -item.quantity } },
+                  { session }
+                );
+              }
             }
           })
         );
 
-        await User.findByIdAndUpdate(
-          metadata.userId,
-          { $inc: { rewardPoints: +subtotal / 10 } },
-          { new: true }
-        );
+        // 3. Update user reward points if logged in
+        if (updatedOrder.userId) {
+          const pointsToAdd = Math.floor(updatedOrder.totalAmount / 100);
+          await User.findByIdAndUpdate(
+            updatedOrder.userId,
+            { $inc: { rewardPoints: pointsToAdd } },
+            { session }
+          );
+        }
 
-        console.log("✅ Order created:", newOrder);
-      } catch (err) {
-        console.error("❌ Order creation failed:", err);
+        // Commit the transaction
+        await session.commitTransaction();
+        console.log(`✅ Order ${orderId} successfully processed`);
+      } catch (transactionError) {
+        // If any error occurs, abort the transaction
+        await session.abortTransaction();
+        console.error("❌ Transaction aborted:", transactionError);
+        throw transactionError;
+      } finally {
+        session.endSession();
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    console.error("❌ Webhook error:", err.message);
+    return NextResponse.json(
+      { error: `Webhook Error: ${err.message}` },
+      { status: 400 }
+    );
   }
 }

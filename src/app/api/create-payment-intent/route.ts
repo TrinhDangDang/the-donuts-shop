@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/dbConnect";
 import MenuItem from "@/models/MenuItem";
 import type { MenuItem as MenuItemType } from "@/types";
+import Order from "@/models/Order";
 
 // Initialize Stripe with proper typing
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -128,35 +129,32 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create PaymentIntent
+    const order = await Order.create({
+      menuItems: cartItems.map((item: any) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        priceAtOrder: item.price,
+      })),
+      status: "pending",
+      totalAmount: amount,
+      paymentStatus: "pending",
+      ...(decoded?.userId
+        ? { userId: decoded?.userId }
+        : {
+            guestName: body.shipping?.name,
+            guestEmail: body.email,
+            guestAddress: body.shipping?.address
+              ? Object.values(body.shipping.address).join(",")
+              : "",
+          }),
+    });
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       metadata: {
-        cartItems: JSON.stringify(
-          cartItems.map((item) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            priceAtOrder: item.price,
-            title: item.name,
-          }))
-        ),
-        subtotal: amount.toString(),
-        userId: decoded ? decoded.userId : "guest",
-        email: body.email || null,
-        shipping: body.shipping
-          ? JSON.stringify({
-              name: body.shipping.name,
-              address: {
-                line1: body.shipping.address.line1,
-                city: body.shipping.address.city || undefined,
-                state: body.shipping.address.state || undefined,
-                postal_code: body.shipping.address.postal_code || undefined,
-                country: body.shipping.address.country || undefined,
-              },
-            })
-          : null,
+        orderId: order._id.toString(),
       },
       receipt_email: body.email || undefined,
       shipping: body.shipping

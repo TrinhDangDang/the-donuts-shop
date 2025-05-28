@@ -78,7 +78,7 @@ export async function PATCH(req: Request) {
     }
 
     let imageUrl = existingItem.imageUrl;
-    let publicId = existingItem.public_id;
+    let publicId = existingItem.publicId;
     console.log(publicId);
     if (imageFile) {
       try {

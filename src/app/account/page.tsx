@@ -19,7 +19,6 @@ export default function AccountPage() {
     isLoading: isOrdersLoading,
     error: ordersError,
   } = useGetRecentOrdersQuery();
-  console.log(orders);
 
   // Combined loading state
   const isLoading = isCustomerLoading || isOrdersLoading;
