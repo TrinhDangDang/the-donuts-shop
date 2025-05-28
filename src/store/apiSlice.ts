@@ -130,11 +130,13 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Menu"],
     }),
-    updateMenuItem: builder.mutation<MenuItem, string>({
-      query: (id) => ({
-        url: `/menu/${id}`,
+    updateMenuItem: builder.mutation<MenuItem, FormData>({
+      query: (updatedMenuItem) => ({
+        url: `/menu`,
         method: "PATCH",
+        body: updatedMenuItem,
       }),
+      invalidatesTags: ["Menu"],
     }),
   }),
 });

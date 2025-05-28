@@ -97,9 +97,19 @@ export async function POST(req: Request) {
         );
       }
 
-      if (menuItem.stock.quantity < item.quantity) {
+      if (menuItem.isMadeToOrder) {
+        subtotal += item.quantity * menuItem.price;
+        continue;
+      }
+
+      // Only check stock for non-made-to-order items
+      if (menuItem.stock < item.quantity) {
         return NextResponse.json(
-          { error: `Insufficient stock for ${menuItem.title}` },
+          {
+            error: `Insufficient stock for ${menuItem.title}`,
+            available: menuItem.stock,
+            requested: item.quantity,
+          },
           { status: 400 }
         );
       }

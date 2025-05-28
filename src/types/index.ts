@@ -6,11 +6,7 @@ export interface MenuItem {
   imageUrl?: string;
   isMadeToOrder: boolean;
   inStock: boolean;
-  stock: {
-    quantity: number;
-    lowStockAlert: number;
-    autoDisable: boolean;
-  };
+  stock: number;
 }
 
 export interface User {

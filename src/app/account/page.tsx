@@ -115,7 +115,7 @@ export default function AccountPage() {
                         <li key={index} className="flex justify-between">
                           <div>
                             <p className="font-medium">
-                              {item.quantity} ×git {item.menuItemId.title}
+                              {item.quantity} × {item.menuItemId.title}
                             </p>
                           </div>
                           <p>

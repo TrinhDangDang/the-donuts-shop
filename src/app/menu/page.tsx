@@ -53,17 +53,28 @@ export default function MenuPage() {
       {queryLoading && <p>Loading menu...</p>}
       {queryError && <p className="text-red-500">Failed to load menu.</p>}
       {menuItems?.map((item) => (
-        <div key={item._id} className="border-b py-2">
-          <p>
-            <strong>{item.title}</strong> – ${item.price}
-          </p>
-          <p className="text-sm text-gray-600">{item.description}</p>
-          <button
-            className="border-2 px-2 py-1 mt-1 hover:bg-gray-100"
-            onClick={() => handleAddToCart(item)}
-          >
-            Add to Cart
-          </button>
+        <div key={item._id} className="flex flex-row border-b py-2">
+          <div>
+            <p>
+              <strong>{item.title}</strong> – ${item.price}
+            </p>
+            <p className="text-sm text-gray-600">{item.description}</p>
+            {item.inStock ? (
+              <button
+                className="border-2 px-2 py-1 mt-1 hover:bg-gray-100"
+                onClick={() => handleAddToCart(item)}
+              >
+                Add to Cart
+              </button>
+            ) : (
+              <div>Currently out of stock</div>
+            )}
+          </div>
+          <img
+            src={item.imageUrl}
+            alt="menu Item"
+            className="w-25 h-full"
+          ></img>
         </div>
       ))}
     </div>

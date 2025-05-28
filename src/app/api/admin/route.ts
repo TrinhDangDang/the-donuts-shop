@@ -45,7 +45,7 @@ export async function GET(req: Request) {
       .populate({ path: "menuItems.menuItemId", model: MenuItem })
       .populate({ path: "userId", model: User })
       .lean();
-
+    //console.log(orders);
     return NextResponse.json(orders, { status: 200 });
   } catch (error: any) {
     console.error("GET /orders error", error);
@@ -170,6 +170,8 @@ export async function POST(req: Request) {
     const price = parseFloat(formData.get("price") as string);
     const isMadeToOrder = formData.get("isMadeToOrder") === "true";
     const imageFile = formData.get("image") as File | null;
+    const inStock = formData.get("inStock") === "true";
+    let stock = parseInt(formData.get("quantity") as string);
 
     if (!title || isNaN(price)) {
       return NextResponse.json(
@@ -177,17 +179,19 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    // Handle stock data differently based on isMadeToOrder
-    let stockData = null;
-    if (!isMadeToOrder) {
-      const quantity = parseInt(formData.get("quantity") as string) || 0;
-      stockData = {
-        quantity: quantity,
-        lowStockAlert: 5, // Default value
-        autoDisable: true, // Default value
-      };
+    if (isMadeToOrder) {
+      stock = 0;
     }
+    // Handle stock data differently based on isMadeToOrder
+    // let stockData = null;
+    // if (!isMadeToOrder) {
+    //   const quantity = parseInt(formData.get("quantity") as string) || 0;
+    //   stockData = {
+    //     quantity: quantity,
+    //     lowStockAlert: 5, // Default value
+    //     autoDisable: true, // Default value
+    //   };
+    // }
 
     let imageUrl = null;
     let publicId = null;
@@ -218,10 +222,10 @@ export async function POST(req: Request) {
       description,
       price,
       isMadeToOrder,
-      stock: stockData, // Will be null if isMadeToOrder is true
+      stock,
       imageUrl,
       publicId,
-      inStock: isMadeToOrder ? true : stockData!.quantity > 0, // Set initial inStock status
+      inStock: inStock, // Set initial inStock status
     });
 
     return NextResponse.json(newItem, { status: 201 });

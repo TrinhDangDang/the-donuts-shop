@@ -29,6 +29,7 @@ export default function CheckoutPage() {
     country: "",
   });
   const currentCartItems = useSelector(selectCurrentCart);
+  console.log(currentCartItems);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

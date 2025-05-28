@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentRole } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MenuItem } from "@/types";
+import { MenuItem, Order } from "@/types";
 import { ToastContainer, toast } from "react-toastify";
 import {
   useAddMenuItemMutation,
@@ -54,7 +54,7 @@ function AdminPage() {
         {/* Orders Section */}
         <section className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Current Orders</h2>
+            <h2 className="text-xl font-semibold">Orders</h2>
             <div className="flex space-x-2">
               <button className="px-3 py-1 bg-blue-100 text-blue-600 rounded-md text-sm">
                 Refresh
@@ -88,6 +88,47 @@ function AdminPage() {
   );
 }
 
+/*
+
+LIST OF ORDER
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+const groupOrdersByDay = (orders: Order[]) => {
+  const grouped: { [key: string]: Order[] } = {};
+
+  orders.forEach((order) => {
+    const orderDate = new Date(order.createdAt);
+
+    const dateKey = orderDate.toISOString().split("T")[0];
+
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(order);
+  });
+  return grouped;
+};
+
+const getSortedDaysWithOrders = (orders: Order[]) => {
+  const grouped = groupOrdersByDay(orders);
+
+  // Sort days (newest first)
+  const sortedDays = Object.keys(grouped).sort(
+    (a, b) => new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  // Sort orders within each day (newest first)
+  sortedDays.forEach((day) => {
+    grouped[day].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  });
+
+  return { sortedDays, grouped };
+};
+
 function OrderList() {
   const {
     data: orders,
@@ -97,7 +138,7 @@ function OrderList() {
   } = useGetOrdersForAdminQuery();
   const [updateOrderStatus] = useUpdateOrderStatusMutation();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-
+  console.log("Menu items:", orders);
   const toggleOrder = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
@@ -119,118 +160,255 @@ function OrderList() {
     );
   if (!orders?.length)
     return <p className="text-center py-4">No orders found</p>;
+  const { sortedDays, grouped } = getSortedDaysWithOrders(orders);
 
   return (
-    <div className="space-y-4">
-      {orders.map((order) => (
-        <div
-          key={order._id}
-          className={`bg-white rounded-lg shadow overflow-hidden border-l-4 ${
-            order.status === "completed"
-              ? "border-green-500"
-              : order.status === "processing"
-              ? "border-blue-500"
-              : "border-amber-500"
-          }`}
-        >
-          <div
-            className="p-4 cursor-pointer flex justify-between items-center hover:bg-gray-50 transition-colors"
-            onClick={() => toggleOrder(order._id)}
-          >
-            <div>
-              <h3 className="font-bold">
-                Order #{order._id.toString().slice(-6).toUpperCase()}
-              </h3>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
-                <span className="font-medium">Status: {order.status}</span>
-                <span>
-                  Customer: {order.userId ? order.userId.name : order.guestName}
-                </span>
-                <span>Total: ${(order.totalAmount / 100).toFixed(2)}</span>
-                <span>
-                  Placed: {new Date(order.createdAt).toLocaleString()}
+    <div className="space-y-8">
+      {sortedDays.map((day) => (
+        <div key={day} className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-700 sticky top-0 bg-white py-2 z-10">
+            {new Date(day).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </h3>
+
+          {grouped[day].map((order) => (
+            <div
+              key={order._id}
+              className={`bg-white rounded-lg shadow overflow-hidden border-l-4 ${
+                order.status === "completed"
+                  ? "border-green-500"
+                  : order.status === "processing"
+                  ? "border-blue-500"
+                  : "border-amber-500"
+              }`}
+            >
+              <div
+                className="p-4 cursor-pointer flex justify-between items-center hover:bg-gray-50 transition-colors"
+                onClick={() => toggleOrder(order._id)}
+              >
+                <div>
+                  <h3 className="font-bold">
+                    Order #{order._id.toString().slice(-6).toUpperCase()}
+                  </h3>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
+                    <span className="font-medium">Status: {order.status}</span>
+                    <span>
+                      Customer:{" "}
+                      {order.userId ? order.userId.name : order.guestName}
+                    </span>
+                    <span>Total: ${(order.totalAmount / 100).toFixed(2)}</span>
+                    <span>
+                      Placed: {new Date(order.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-lg">
+                  {expandedOrderId === order._id ? "−" : "+"}
                 </span>
               </div>
-            </div>
-            <span className="text-lg">
-              {expandedOrderId === order._id ? "−" : "+"}
-            </span>
-          </div>
 
-          {expandedOrderId === order._id && (
-            <div className="p-4 border-t">
-              <div className="mb-4">
-                <h4 className="font-semibold mb-2">Items:</h4>
-                <ul className="space-y-2">
-                  {order.menuItems.map((menuItem) => (
-                    <li
-                      key={menuItem.menuItemId._id.toString()}
-                      className="flex justify-between"
+              {expandedOrderId === order._id && (
+                <div className="p-4 border-t">
+                  <div className="mb-4">
+                    <h4 className="font-semibold mb-2">Items:</h4>
+                    <ul className="space-y-2">
+                      {order.menuItems.map((menuItem) => (
+                        <li
+                          key={menuItem.menuItemId._id.toString()}
+                          className="flex justify-between"
+                        >
+                          <span>
+                            {menuItem.quantity}x {menuItem.menuItemId.title}
+                          </span>
+                          <span>
+                            $
+                            {(
+                              menuItem.priceAtOrder * menuItem.quantity
+                            ).toFixed(2)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    {order.userId ? (
+                      <div>
+                        <h4 className="font-semibold">Customer:</h4>
+                        <p>{order.userId.name}</p>
+                        <p>{order.userId.email}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <h4 className="font-semibold">Guest:</h4>
+                        <p>{order.guestName}</p>
+                        <p>{order.guestEmail}</p>
+                        {order.guestAddress && <p>{order.guestAddress}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 flex gap-2 flex-wrap">
+                    <button
+                      onClick={() =>
+                        handleStatusUpdate(order._id, "processing")
+                      }
+                      className={`px-3 py-1 rounded text-sm ${
+                        order.status === "processing"
+                          ? "bg-blue-600 text-white"
+                          : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                      }`}
                     >
-                      <span>
-                        {menuItem.quantity}x {menuItem.menuItemId.title}
-                      </span>
-                      <span>
-                        $
-                        {(menuItem.priceAtOrder * menuItem.quantity).toFixed(2)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="pt-4 border-t">
-                {order.userId ? (
-                  <div>
-                    <h4 className="font-semibold">Customer:</h4>
-                    <p>{order.userId.name}</p>
-                    <p>{order.userId.email}</p>
+                      Mark as Processing
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(order._id, "completed")}
+                      className={`px-3 py-1 rounded text-sm ${
+                        order.status === "completed"
+                          ? "bg-green-600 text-white"
+                          : "bg-green-100 text-green-800 hover:bg-green-200"
+                      }`}
+                    >
+                      Mark as Completed
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(order._id, "cancelled")}
+                      className="px-3 py-1 rounded text-sm bg-red-100 text-red-800 hover:bg-red-200"
+                    >
+                      Cancel Order
+                    </button>
                   </div>
-                ) : (
-                  <div>
-                    <h4 className="font-semibold">Guest:</h4>
-                    <p>{order.guestName}</p>
-                    <p>{order.guestEmail}</p>
-                    {order.guestAddress && <p>{order.guestAddress}</p>}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleStatusUpdate(order._id, "processing")}
-                  className={`px-3 py-1 rounded text-sm ${
-                    order.status === "processing"
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                  }`}
-                >
-                  Mark as Processing
-                </button>
-                <button
-                  onClick={() => handleStatusUpdate(order._id, "completed")}
-                  className={`px-3 py-1 rounded text-sm ${
-                    order.status === "completed"
-                      ? "bg-green-600 text-white"
-                      : "bg-green-100 text-green-800 hover:bg-green-200"
-                  }`}
-                >
-                  Mark as Completed
-                </button>
-                <button
-                  onClick={() => handleStatusUpdate(order._id, "cancelled")}
-                  className="px-3 py-1 rounded text-sm bg-red-100 text-red-800 hover:bg-red-200"
-                >
-                  Cancel Order
-                </button>
-              </div>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       ))}
     </div>
   );
 }
+//   return (
+//     <div className="space-y-4">
+//       {orders.map((order) => (
+//         <div
+//           key={order._id}
+//           className={`bg-white rounded-lg shadow overflow-hidden border-l-4 ${
+//             order.status === "completed"
+//               ? "border-green-500"
+//               : order.status === "processing"
+//               ? "border-blue-500"
+//               : "border-amber-500"
+//           }`}
+//         >
+//           <div
+//             className="p-4 cursor-pointer flex justify-between items-center hover:bg-gray-50 transition-colors"
+//             onClick={() => toggleOrder(order._id)}
+//           >
+//             <div>
+//               <h3 className="font-bold">
+//                 Order #{order._id.toString().slice(-6).toUpperCase()}
+//               </h3>
+//               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm">
+//                 <span className="font-medium">Status: {order.status}</span>
+//                 <span>
+//                   Customer: {order.userId ? order.userId.name : order.guestName}
+//                 </span>
+//                 <span>Total: ${(order.totalAmount / 100).toFixed(2)}</span>
+//                 <span>
+//                   Placed: {new Date(order.createdAt).toLocaleString()}
+//                 </span>
+//               </div>
+//             </div>
+//             <span className="text-lg">
+//               {expandedOrderId === order._id ? "−" : "+"}
+//             </span>
+//           </div>
+
+//           {expandedOrderId === order._id && (
+//             <div className="p-4 border-t">
+//               <div className="mb-4">
+//                 <h4 className="font-semibold mb-2">Items:</h4>
+//                 <ul className="space-y-2">
+//                   {order.menuItems.map((menuItem) => (
+//                     <li
+//                       key={menuItem.menuItemId._id.toString()}
+//                       className="flex justify-between"
+//                     >
+//                       <span>
+//                         {menuItem.quantity}x {menuItem.menuItemId.title}
+//                       </span>
+//                       <span>
+//                         $
+//                         {(menuItem.priceAtOrder * menuItem.quantity).toFixed(2)}
+//                       </span>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               </div>
+
+//               <div className="pt-4 border-t">
+//                 {order.userId ? (
+//                   <div>
+//                     <h4 className="font-semibold">Customer:</h4>
+//                     <p>{order.userId.name}</p>
+//                     <p>{order.userId.email}</p>
+//                   </div>
+//                 ) : (
+//                   <div>
+//                     <h4 className="font-semibold">Guest:</h4>
+//                     <p>{order.guestName}</p>
+//                     <p>{order.guestEmail}</p>
+//                     {order.guestAddress && <p>{order.guestAddress}</p>}
+//                   </div>
+//                 )}
+//               </div>
+
+//               <div className="pt-4 flex gap-2 flex-wrap">
+//                 <button
+//                   onClick={() => handleStatusUpdate(order._id, "processing")}
+//                   className={`px-3 py-1 rounded text-sm ${
+//                     order.status === "processing"
+//                       ? "bg-blue-600 text-white"
+//                       : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+//                   }`}
+//                 >
+//                   Mark as Processing
+//                 </button>
+//                 <button
+//                   onClick={() => handleStatusUpdate(order._id, "completed")}
+//                   className={`px-3 py-1 rounded text-sm ${
+//                     order.status === "completed"
+//                       ? "bg-green-600 text-white"
+//                       : "bg-green-100 text-green-800 hover:bg-green-200"
+//                   }`}
+//                 >
+//                   Mark as Completed
+//                 </button>
+//                 <button
+//                   onClick={() => handleStatusUpdate(order._id, "cancelled")}
+//                   className="px-3 py-1 rounded text-sm bg-red-100 text-red-800 hover:bg-red-200"
+//                 >
+//                   Cancel Order
+//                 </button>
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       ))}
+//     </div>
+//   );
+// }
+
+/*
+
+ADMIN MENU CONTROL
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
 
 function Menu() {
   const [updateMenuItem] = useUpdateMenuItemMutation();
@@ -261,8 +439,8 @@ function Menu() {
       return false;
     }
 
-    if (form.quantity && !form.isMadeToOrder) {
-      if (isNaN(parseFloat(form.quantity)) || parseFloat(form.quantity) < 0) {
+    if (form.stock && !form.isMadeToOrder) {
+      if (isNaN(parseFloat(form.stock)) || parseFloat(form.stock) < 0) {
         return false;
       }
     }
@@ -282,9 +460,9 @@ function Menu() {
     formDataToSend.append("description", form.description);
     formDataToSend.append("price", form.price);
     formDataToSend.append("isMadeToOrder", form.isMadeToOrder.toString());
-    if (!form.isMadeToOrder && form.quantity) {
-      formDataToSend.append("quantity", form.quantity);
-    }
+    // if (!form.isMadeToOrder && form.quantity) {
+    formDataToSend.append("quantity", form.stock);
+    // }
 
     if (selectedFile) {
       formDataToSend.append("image", selectedFile);
@@ -299,7 +477,7 @@ function Menu() {
         description: "",
         price: "",
         imageUrl: "",
-        quantity: "",
+        stock: "",
         isMadeToOrder: false,
       });
       setSelectedFile(null);
@@ -345,34 +523,83 @@ function Menu() {
     }
   };
   // Save edited item
-  const saveEditedItem = () => {
-    //PUT LOGIC TO SAVE THE UPDATED ITEM HERE
+  const saveEditedItem = async () => {
+    if (!currentEditItem) {
+      alert("No item selected for editing");
+      return;
+    }
 
-    closeDialog();
+    try {
+      const formData = new FormData();
+
+      // Append required fields
+      formData.append("id", currentEditItem._id);
+      formData.append("title", currentEditItem.title);
+      formData.append("description", currentEditItem.description ?? "");
+      formData.append("price", currentEditItem.price.toString());
+      formData.append("inStock", currentEditItem.inStock.toString());
+      formData.append(
+        "isMadeToOrder",
+        currentEditItem.isMadeToOrder.toString()
+      );
+
+      // Conditionally append stock quantity
+      // if (
+      //   !currentEditItem.isMadeToOrder &&
+      //   currentEditItem.stock !== undefined
+      // ) {
+
+      formData.append(
+        "quantity",
+        currentEditItem.isMadeToOrder ? "0" : currentEditItem.stock.toString()
+      );
+      // }
+
+      // Append image if selected
+      if (selectedFile) {
+        formData.append("image", selectedFile);
+        // Clear the selectedFile state after appending
+        setSelectedFile(null);
+      }
+      toast.info("Updating menu item...");
+
+      // Send the update request
+      await updateMenuItem(formData).unwrap();
+
+      // Close dialog on success
+      closeDialog();
+
+      // Optional: Show success feedback
+      toast.success("Menu item updated successfully!");
+    } catch (error) {
+      console.error("Failed to update item:", error);
+      alert("Failed to update menu item. Please try again.");
+    }
   };
   // Handle input changes in dialog
   const handleDialogInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!currentEditItem) return;
-    const { name, value } = e.target;
-    if (name === "quantity") {
-      setCurrentEditItem({
-        ...currentEditItem,
-        stock: {
-          ...currentEditItem.stock,
-          quantity: parseInt(value) || 0,
-        },
-      });
-    }
-    // Handle other fields
-    else {
-      setCurrentEditItem({
-        ...currentEditItem,
-        [name]:
-          name === "title" || name === "description"
-            ? value
-            : parseFloat(value) || 0,
-      });
-    }
+    const { name, value, type, checked } = e.target;
+
+    setCurrentEditItem((prevState) => {
+      if (!prevState) return prevState; // Early return if null
+
+      // Handle quantity field separately
+      // if (name === "quantity") {
+      //   return {
+      //     ...prevState,
+      //     stock: {
+      //       ...prevState.stock,
+      //       quantity: Number(value), // Convert to number explicitly
+      //     },
+      //   };
+      // }
+
+      // Handle all other fields
+      return {
+        ...prevState,
+        [name]: type === "checkbox" ? checked : value,
+      };
+    });
   };
 
   //ADD NEW ITEM LOGIC
@@ -382,7 +609,7 @@ function Menu() {
     description: string;
     price: string;
     imageUrl: string;
-    quantity?: string;
+    stock: string;
     isMadeToOrder: boolean;
   }
   const [form, setForm] = useState<MenuItemForm>({
@@ -390,7 +617,7 @@ function Menu() {
     description: "",
     price: "",
     imageUrl: "",
-    quantity: "",
+    stock: "",
     isMadeToOrder: false,
   });
 
@@ -449,12 +676,12 @@ function Menu() {
                     </td>
                   ) : (
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {item.stock.quantity}
+                      {item.stock}
                     </td>
                   )}
 
                   <td className="px-6 py-4 whitespace-normal">
-                    {item.description}
+                    {item.description?.substring(0, 30) + "..."}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap space-x-2">
                     <button
@@ -518,28 +745,32 @@ function Menu() {
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-              {!form.isMadeToOrder && !currentEditItem?.isMadeToOrder && (
+              {(mode === "Edit"
+                ? !currentEditItem?.isMadeToOrder
+                : !form.isMadeToOrder) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Quantity
                   </label>
                   <input
                     type="number"
-                    name="quantity"
+                    name="stock"
                     value={
-                      mode == "Edit"
-                        ? currentEditItem?.stock.quantity
-                        : form.quantity
+                      mode === "Edit" ? currentEditItem?.stock : form.stock
                     }
                     placeholder={
                       mode !== "Edit" ? "Enter item quantity..." : undefined
                     }
                     onChange={
-                      mode == "Edit"
+                      mode === "Edit"
                         ? handleDialogInputChange
                         : handleNewItemInputChange
                     }
-                    disabled={form.isMadeToOrder}
+                    // disabled={
+                    //   mode === "Edit"
+                    //     ? currentEditItem?.isMadeToOrder
+                    //     : form.isMadeToOrder
+                    // }
                     min="0"
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   />
@@ -552,6 +783,7 @@ function Menu() {
                 </label>
                 <input
                   type="text"
+                  style={{ height: "80px", lineHeight: "1" }}
                   name="description"
                   value={
                     mode == "Edit"
@@ -577,15 +809,13 @@ function Menu() {
                   <img
                     src={currentEditItem?.imageUrl}
                     alt="Placeholder image"
-                    className="w-64 h-auto"
+                    className="w-45 h-auto"
                   />
                 ) : null}
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={
-                    mode == "Edit" ? handleDialogInputChange : handleFileChange
-                  }
+                  onChange={handleFileChange}
                   className="block w-full text-sm text-gray-500
       file:mr-4 file:py-2 file:px-4
       file:rounded-md file:border-0
@@ -602,6 +832,21 @@ function Menu() {
                   type="checkbox"
                   name="isMadeToOrder"
                   checked={currentEditItem?.isMadeToOrder}
+                  onChange={
+                    mode == "Edit"
+                      ? handleDialogInputChange
+                      : handleNewItemInputChange
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  In Stock
+                </label>
+                <input
+                  type="checkbox"
+                  name="inStock"
+                  checked={currentEditItem?.inStock}
                   onChange={
                     mode == "Edit"
                       ? handleDialogInputChange
@@ -666,7 +911,7 @@ function Dialog({ isOpen, onClose, children, title }: DialogProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="p-4">
           <h3 className="text-lg font-semibold">{title}</h3>

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/dbConnect";
 import { NextResponse } from "next/server";
 import Order from "@/models/Order";
 import Stripe from "stripe";
+import MenuItem from "@/models/MenuItem";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -50,6 +51,22 @@ export async function POST(req: Request) {
           paymentStatus: "paid",
           totalAmount: subtotal,
         });
+
+        await Promise.all(
+          cartItems.map(async (item: any) => {
+            const menuItem = await MenuItem.findById(item.menuItemId);
+
+            // Skip stock update for made-to-order items
+            if (menuItem && !menuItem.isMadeToOrder) {
+              await MenuItem.findByIdAndUpdate(
+                item.menuItemId,
+                { $inc: { stock: -item.quantity } },
+                { new: true }
+              );
+            }
+          })
+        );
+
         console.log("✅ Order created:", newOrder);
       } catch (err) {
         console.error("❌ Order creation failed:", err);
