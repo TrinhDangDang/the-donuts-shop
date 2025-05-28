@@ -2,6 +2,7 @@
 import dbConnect from "@/lib/dbConnect";
 import { NextResponse } from "next/server";
 import Order from "@/models/Order";
+import User from "@/models/User";
 import Stripe from "stripe";
 import MenuItem from "@/models/MenuItem";
 
@@ -65,6 +66,14 @@ export async function POST(req: Request) {
               );
             }
           })
+        );
+
+        await Promise.all(
+          await User.findByIdAndUpdate(
+            metadata.userId,
+            { $inc: { rewardPoints: +subtotal / 10 } },
+            { new: true }
+          )
         );
 
         console.log("✅ Order created:", newOrder);
