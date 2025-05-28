@@ -40,14 +40,15 @@ A full-featured e-commerce platform for a donut shop built with Next.js, featuri
 
 ## Screenshots
 
-| Page      | Screenshot                                            |
-| --------- | ----------------------------------------------------- |
-| Home      | ![Home Page](assets/ocalhost_3000_.png)               |
-| Menu      | ![Menu Page](<assets/localhost_3000_(1).png>>)        |
-| Admin     | ![Admin Dashboard](<assets/localhost_3000_(4).png>>)  |
-| Rewards   | ![Rewards Program](<assets/localhost_3000_(2).png>>)  |
-| Locations | ![Store Locations](assets/ocalhost_3000_location.png) |
-| Schema    | ![Database Schema](assets/Untitled.png)               |
+| Page        | Screenshot                                     |
+| ----------- | ---------------------------------------------- |
+| Home        | ![Home Page](assets/homePage.png)              |
+| Menu        | ![Menu Page](assets/menuPage.png)              |
+| Admin       | ![Admin Dashboard](assets/adminDashboardd.png) |
+| Rewards     | ![Rewards Program](assets/rewardsPage.png)     |
+| Locations   | ![Store Locations](assets/locationPage.png)    |
+| Update Menu | ![Update Menu](assets/updateMenuItem.png)      |
+| Schema      | ![Database Schema](assets/Untitled.png)        |
 
 ## Technologies
 
